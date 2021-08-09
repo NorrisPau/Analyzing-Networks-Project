@@ -1,0 +1,33 @@
+'''
+
+1. calculate a matrix of feasible batches for one packing station 
+    -- a feasible batch respects cobot capacity
+    -- METHOD: getFeasibleBatches()
+
+2. choose from that matrix the batch that has the least time per order (or time per item) (IMPORTANT: try different choices)
+    -- need method to determine the time it takes for the cobot to pick all items and return to packing station (should include waytime as well as waiting time for pickers)
+    -- METHOD: batchDuration()
+    -- METHOD: batchTimePerOrder() <-- used to chose the "best" batch at the time
+    
+3. assign the chosen batch to the packing station
+    --
+    
+4. reduce the set of open orders by the orders of the assigned batch
+
+
+5. move on to the next packing station and assign another feasible batch
+
+
+6. after all packing stations are working, wait until any(the first) cobot comes back.
+7. send it out again with the algorithm from 1-5 (calculate possible batches, assign batch based on rules, reduce set of open order)
+
+
+
+
+optimizations:
+we don't want to send out the robot again for a picking tour, 
+that is faster than the packing time of the packer for the previously delivered order. (or add in waiting time)
+
+
+
+'''

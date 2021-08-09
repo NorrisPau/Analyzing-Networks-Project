@@ -21,6 +21,7 @@ import rafs_instance as instance
 layoutFile = r'data/layout/1-1-1-2-1.xlayo'
 podInfoFile = 'data/sku24/pods_infos.txt'
 
+# info on the warehouse layout, bots. pick locations, waypoints etc.
 instances = {}
 instances[24,2] = r'data/sku24/layout_sku_24_2.xml'
 
@@ -130,6 +131,7 @@ class WarehouseDateProcessing():
         return d_ij
 		
 
+
 class Demo():
     def __init__(self, splitOrders = False):
         
@@ -149,7 +151,7 @@ class Demo():
     def prepareData(self):
         print("[0] preparing all data with the standard format: ")
         #Every instance
-        for key,instanceFile in instances.items():
+        for key, instanceFile in instances.items():
             podAmount = key[0]
             depotAmount = key[1]   
             #For different orders
@@ -172,3 +174,5 @@ class Demo():
 if __name__ == "__main__":
     _demo = Demo()	
     print("todo:")
+
+
