@@ -2,7 +2,9 @@
 
 1. calculate a matrix of feasible batches for one packing station 
     -- a feasible batch respects cobot capacity
-    -- METHOD: getFeasibleBatches()
+    -- METHOD:  getFeasibleBatches(self, packingStationID: int) -> dict[batchID, List[OrderID]]:
+                return feasibleBatchesDict
+
 
 2. choose from that matrix the batch that has the least time per order (or time per item) (IMPORTANT: try different choices)
     -- need method to determine the time it takes for the cobot to pick all items and return to packing station (should include waytime as well as waiting time for pickers)
@@ -11,7 +13,8 @@
     
 3. assign the chosen batch to the packing station
     --
-    
+
+
 4. reduce the set of open orders by the orders of the assigned batch
 
 
