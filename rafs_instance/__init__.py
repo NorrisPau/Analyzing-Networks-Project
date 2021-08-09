@@ -80,6 +80,7 @@ class PodLayout:
             setattr(self, attrName, attrVal)    
 
 #Class pod
+
 class Pod:
     def __init__(self, podID = None, posX= 0, posY = 0, usedCapacity = None, maxCapacity = None, 
                  reservedCapacity = None, tag = None, readyForRefill = None, items = None, rad = None, orientation = None, 
@@ -254,7 +255,8 @@ class OrderItemPosition:
     def __init__(self, ID, count):
         self.ItemDescID = ID
         self.Count = count     
-        
+
+
 #Warehouse class, that holds all information about the warehouse
 class Warehouse:
     def __init__(self, layoutFile, instanceFile, podInfoFile, podItemFile, orderFile):
