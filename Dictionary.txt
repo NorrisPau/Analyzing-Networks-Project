@@ -1,7 +1,7 @@
 Picker      - Employee in the shelves area to load the cobot
 Packer      - Employee in the packing area to take items from cobot and pack the packages
 Pods
-Shelves
+Shelves - are shelves
 
 
 
