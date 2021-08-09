@@ -26,7 +26,6 @@
 
 
 
-
 optimizations:
 we don't want to send out the robot again for a picking tour, 
 that is faster than the packing time of the packer for the previously delivered order. (or add in waiting time)
