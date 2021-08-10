@@ -17,12 +17,10 @@ import time
 from operator import itemgetter, attrgetter 
 from xml.dom import minidom
 import rafs_instance as instance
-from lxml import objectify
 
 layoutFile = r'data/layout/1-1-1-2-1.xlayo'
 podInfoFile = 'data/sku24/pods_infos.txt'
 
-# info on the warehouse layout, bots. pick locations, waypoints etc.
 instances = {}
 instances[24,2] = r'data/sku24/layout_sku_24_2.xml'
 
@@ -33,8 +31,6 @@ storagePolicies['dedicated'] = 'data/sku24/pods_items_dedicated_1.txt'
 orders = {}
 orders['10_5']=r'data/sku24/orders_10_mean_5_sku_24.xml'
 #orders['20_5']=r'data/sku24/orders_20_mean_5_sku_24.xml'
-
-
 
 class WarehouseDateProcessing():
     def __init__(self, warehouseInstance, batch_size = None):
@@ -132,26 +128,7 @@ class WarehouseDateProcessing():
                     d_ij[i,j] = dist                
                 
         return d_ij
-
-
-
-
-class Solution():
-    def __init__(self):
-        # TODO: read the solution template file and use their structure for the solution class
-        # figure out how to do this from their case or package
-        self.solutionTemplateFile = r'log_example.xml'
-
-        self.tree = ET.parse(self.solutionTemplateFile)
-        self.root = self.tree.getroot()
-
-
-        self.main = objectify.fromstring(self.solutionTemplateFile)
-        print(self.main.object1[0])  # content
-        print(self.main.object1[1] ) # contenbar
-        print(self.main.object1[0].get("attr"))  # name
-        print(self.main.test)  # me
-
+		
 
 class Demo():
     def __init__(self, splitOrders = False):
@@ -167,24 +144,12 @@ class Demo():
         else:
             self.is_storage_dedicated = False
 
-        self.solution1 = self.initSolution()
-        self.solution2 = self.initSolution()
-        self.solution3 = self.initSolution()
-
-
-    def t1Greedy(self):
-        # top level method for the solution of task 1
-        # TODO: implement the algorithm here
-
-
-        return self.solution1
-
 
 	# warehouse instance
     def prepareData(self):
         print("[0] preparing all data with the standard format: ")
         #Every instance
-        for key, instanceFile in instances.items():
+        for key,instanceFile in instances.items():
             podAmount = key[0]
             depotAmount = key[1]   
             #For different orders
@@ -204,25 +169,6 @@ class Demo():
         return d_ij
 
 
-    def initSolution(self):
-        print("[2] initializing solution class")
-        #solution = Solution()
-        return solution
-
-
-
-
-
-
-
 if __name__ == "__main__":
-
-    _demo = Demo()
-    solution1 = _demo.t1Greedy()
-
-    #solution2 =
-    #solution3 =
-    print(solution1)
+    _demo = Demo()	
     print("todo:")
-
-
