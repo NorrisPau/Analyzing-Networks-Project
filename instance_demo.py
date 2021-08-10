@@ -33,6 +33,11 @@ orders = {}
 orders['10_5']=r'data/sku24/orders_10_mean_5_sku_24.xml'
 #orders['20_5']=r'data/sku24/orders_20_mean_5_sku_24.xml'
 
+
+solutionTemplateFile = r'log_example.xml'
+
+
+
 class WarehouseDateProcessing():
     def __init__(self, warehouseInstance, batch_size = None):
         self.Warehouse = warehouseInstance
@@ -147,6 +152,10 @@ class Demo():
             self.is_storage_dedicated = False
 
 
+    def t1Greedy(self):
+        t1GreedySolution = Solution(solutionTemplateFile)
+        return t1GreedySolution
+
 	# warehouse instance
     def prepareData(self):
         print("[0] preparing all data with the standard format: ")
@@ -171,8 +180,24 @@ class Demo():
         return d_ij
 
 
+class Solution():
+    def __init__(self, solutionTemplate):
+        self.tree = ET.parse(solutionTemplate)
+        self.root = self.tree.getroot()
+
+
+
+
 if __name__ == "__main__":
-    _demo = Demo()	
+
+    _demo = Demo()
+    solution1 = _demo.t1Greedy()
+
+
+
+    #solution2 =
+    #solution3 =
+    print(solution1)
     print("todo:")
 
 

@@ -1,4 +1,41 @@
 '''
+0.
+    class Demo:
+        def t1Greedy():
+        return solutionClass
+
+        def t2Annealing():
+        return solutionClass
+
+        def t3MixesPolicy():
+        return solutionClass
+
+
+
+    class Warehouse:
+        def __init__(self):
+            self.openOrders = self.Orders
+            self.assignedOrders = []
+
+
+    class OutputStation():
+        def getFeasibleBatches(self, warehouseInstance.openOrders)
+
+
+
+    class Solution():
+        '''
+        a class that has the attributes described in the log_example.xml file
+        solution classes are then created by the t******-methods of the Demo class and returned to the outside script.
+        from there they can be expported to xml file with ET.tree
+        '''
+        def __init__(self):
+            # load structure from xml template file
+
+
+
+
+
 
 1. calculate a matrix of feasible batches for one packing station 
     -- a feasible batch respects cobot capacity
