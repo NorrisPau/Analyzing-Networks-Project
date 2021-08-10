@@ -1,7 +1,15 @@
 Picker      - Employee in the shelves area to load the cobot
 Packer      - Employee in the packing area to take items from cobot and pack the packages
-Pods
-Shelves - are shelves
+Pods        - Container in shelve (blue box in layout)
+dedicated policy    - one pot can only contains one item
+OutputStations  - "packing station" (red outside little box)
+batch           - a tour of a cobot
+bin             - contains items of an order
+bot             - cobot
+Waypoints    - Intersections at picture (not relevant, too complex)
+distance_ij     - distances between each packing station and pods (stored as dictionary which is attribute of demo class)
+
+there are always 2 pods in 1 picking station
 
 
 
