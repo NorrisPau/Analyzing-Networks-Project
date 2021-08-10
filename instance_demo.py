@@ -227,8 +227,6 @@ if __name__ == "__main__":
     _demo = Demo()
     solution1 = _demo.t1Greedy()
 
-
-
     #solution1.savetoxml(path)
 
     #solution2 =
