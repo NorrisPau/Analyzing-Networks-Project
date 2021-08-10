@@ -1,50 +1,36 @@
-#example to use
-import numpy as np
-import xml.etree.cElementTree as ET
+# example to use
+
+
+#%% Importing libraries
+#import numpy as np
+#import xml.etree.cElementTree as ET
 import networkx as nx
-import matplotlib.pyplot as plt
-import pandas as pd
-import itertools
-import datetime
-import pickle
-import traceback
+#import matplotlib.pyplot as plt
+#import pandas as pd
+#import itertools
+#import datetime
+#import pickle
+#import traceback
 import os
 import os.path
 from os import path
-import math
+#import math
 import json
-import time
-from operator import itemgetter, attrgetter 
-from xml.dom import minidom
+#import time
+#from operator import itemgetter, attrgetter 
+#from xml.dom import minidom
 import rafs_instance as instance
+    # this does not load all the classes defined in rafs_instance/__init__.py,
+    # but it provides the module instance from which all the classes can be
+    # loaded via .-notation
 
-layoutFile = r'data/layout/1-1-1-2-1.xlayo'
-podInfoFile = 'data/sku24/pods_infos.txt'
-
-# info on the warehouse layout, bots. pick locations, waypoints etc.
-instances = {}
-instances[24,2] = r'data/sku24/layout_sku_24_2.xml'
-
-storagePolicies = {}
-storagePolicies['dedicated'] = 'data/sku24/pods_items_dedicated_1.txt'
-#storagePolicies['mixed'] = 'data/sku24/pods_items_mixed_shevels_1-5.txt'
-
-orders = {}
-orders['10_5']=r'data/sku24/orders_10_mean_5_sku_24.xml'
-#orders['20_5']=r'data/sku24/orders_20_mean_5_sku_24.xml'
-
-
-solutionTemplateFile = r'log_example.xml'
-
-
-
+#%% defining the class 
 class WarehouseDateProcessing():
     def __init__(self, warehouseInstance, batch_size = None):
         self.Warehouse = warehouseInstance
         self._InitSets(warehouseInstance, batch_size)   
 
     def preprocessingFilterPods(self, warehouseInstance):
-        
         resize_pods = {}
         print("preprocessingFilterPods")
         item_id_list=[]
@@ -55,7 +41,7 @@ class WarehouseDateProcessing():
                 if item not in item_id_list:
                     item_id_list.append(item)
                     #print(item_id)
-       
+ 
         #for item in item_id_list:
         #    print(item)
 
@@ -132,11 +118,9 @@ class WarehouseDateProcessing():
             for i, values in d_ij_dict.items():
                 for j, dist in values.items():
                     d_ij[i,j] = dist                
-                
         return d_ij
-		
 
-
+#%% 
 class Demo():
     def __init__(self, splitOrders = False):
         
@@ -152,26 +136,21 @@ class Demo():
             self.is_storage_dedicated = False
 
 
-    def t1Greedy(self):
-        t1GreedySolution = Solution(solutionTemplateFile)
-        return t1GreedySolution
-
 	# warehouse instance
     def prepareData(self):
         print("[0] preparing all data with the standard format: ")
         #Every instance
-        for key, instanceFile in instances.items():
-            podAmount = key[0]
-            depotAmount = key[1]   
+        for key,instanceFile in instances.items():
+            #podAmount = key[0]
+            #depotAmount = key[1]   
             #For different orders
             for key, orderFile in orders.items():
-                orderAmount = key
+                # orderAmount = key
                 #For storage policies
                 for storagePolicy, storagePolicyFile in storagePolicies.items():   
                     warehouseInstance = instance.Warehouse(layoutFile, instanceFile, podInfoFile, storagePolicyFile, orderFile)
         return warehouseInstance
 
-	# distance
     def initData(self):
         print("[1] changing data format for the algorithm we used here: ")
         warehouse_data_processing = WarehouseDateProcessing(self.warehouseInstance)
@@ -180,24 +159,40 @@ class Demo():
         return d_ij
 
 
-class Solution():
-    def __init__(self, solutionTemplate):
-        self.tree = ET.parse(solutionTemplate)
-        self.root = self.tree.getroot()
+#%% Getting the files needed
 
+# not sure what this contains, but it is needed for the Warehouse-class
+layoutFile = r'data/layout/1-1-1-2-1.xlayo' 
+# loading all the information about the pods
+podInfoFile = 'data/sku24/pods_infos.txt'   # 
+# loading information about picking locations, packing stations, waypoints,
+# pods 
+instanceFile = r'data/sku24/layout_sku_24_2.xml'
 
+# loading information about item storage: contains all SKUs along with their
+# attributes
+storagePolicyFile = 'data/sku24/pods_items_mixed_shevels_1-5.txt'
+#storagePolicies['mixed'] = 'data/sku24/pods_items_mixed_shevels_1-5.txt'
 
+# loading information about the orders: contains list of orders, with number
+# of ordered items per SKU-ID
+orderFile =r'data/sku24/orders_10_mean_5_sku_24.xml'
+#orders['20_5']=r'data/sku24/orders_20_mean_5_sku_24.xml'
 
-if __name__ == "__main__":
+# trying a different way to get the demonstration running
+# function to prepare data
+warehouseInstance = instance.Warehouse(layoutFile, instanceFile, podInfoFile, storagePolicyFile, orderFile)
 
-    _demo = Demo()
-    solution1 = _demo.t1Greedy()
+def initData(self):
+    print("[1] changing data format for the algorithm we used here: ")
+    warehouse_data_processing = WarehouseDateProcessing(self.warehouseInstance)
+    #Distance d_ij between two nodes i,j \in V
+    d_ij = warehouse_data_processing.CalculateDistance()
+    return d_ij
 
+#%% 
+batch_weight = 18
+item_id_pod_id_dict = {}
 
-
-    #solution2 =
-    #solution3 =
-    print(solution1)
-    print("todo:")
-
+distance_ij = WarehouseDateProcessing(warehouseInstance).CalculateDistance()
 
