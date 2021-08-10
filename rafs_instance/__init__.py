@@ -2,6 +2,9 @@ import xml.etree.cElementTree as ET
 import numpy as np
 import copy
 
+import pandas as pd
+
+
 class PodLayout:
     def __init__(self, tierCount= None, tierHeight= None, humanCount= None, humanRad= None, humanMaxAcc= None, humanMaxDec= None,
                  humanMaxVel= None, humanTurnSpeed= None, boxCap= None, botCount= None, botRad= None, maxAcc= None, maxDec= None,
@@ -587,12 +590,35 @@ class Warehouse:
         '''
         TODO: write function to get feasible batches from open orders, that fulfil the weight constraint
         '''
-        feasibleBatchesDict = {}
 
-        for i in range(len(self.openOrders)):
-            print(i)
-            feasibleBatchesDict[i] = i
 
+        # creating table with weights of orders
+        weights = []
+        orders = []
+        for i in range(len(self.Orders)):
+            weights.append(self.Orders[i].totalWeight)
+            orders.append(i)
+
+        weight_table = pd.DataFrame({'orders':orders, 'weights':weights})
+        feasibleBatchesList = []
+        cobotCapicity = self.Bots['0'].Capactiy
+
+        def combinations(target, data):
+            for i in range(len(data)):
+                new_target = copy.copy(target)
+                new_data = copy.copy(data)
+                new_target.append(data[i])
+                new_data = data[i + 1:]
+                weights = weight_table.loc[new_target]["weights"]
+                if weights.sum() < cobotCapicity:
+                    if new_target not in feasibleBatchesList:
+                        feasibleBatchesList.append(new_target)
+                else:
+                    new_target = new_target[:-1]
+                combinations(new_target, new_data)
+
+        target = []
+        combinations(target, weight_table['orders'])
 
 
             #stationCopy = copy.deepcopy(station)
@@ -607,7 +633,7 @@ class Warehouse:
             #del stationCopy
 
 
-        self.feasibleBatches = feasibleBatchesDict
+        self.feasibleBatches = feasibleBatchesList
 
 
 
