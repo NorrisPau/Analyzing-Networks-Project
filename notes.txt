@@ -37,10 +37,25 @@
 
 
 
-1. calculate a matrix of feasible batches for one packing station 
+1. calculate a matrix of feasible batches for one packing station (using weight constraint 18kg). Calculate time to complete batch for each packing station.
     -- a feasible batch respects cobot capacity
     -- METHOD:  getFeasibleBatches(self, packingStationID: int) -> dict[batchID, List[OrderID]]:
                 return feasibleBatchesDict
+    Considerations for batch time completion calculation:
+        Walking speed to get to shelves (human) 1.3 m/s
+        Picking time for each item 3.0 seconds
+        More than one cobot could be waiting on the same picker (this assumption seems super hard. Maybe we make optional).
+        Moving speed of cobot is 2.0 m/s
+        We also need to calculate the optimal route for each batch (this assumption is also super hard. We might need to come up
+                                                                    with and easy solution).
+
+
+Packing time:
+    unload time 20 sec
+    prep time 30 sec
+    packing time 60 sec (this is a constraint. If the cobot gets a new batch and returns in less than 60 sec, it must wait. This
+                            contraint needs to be considered when choosing the next batch for the cobot.)
+
 
 
 2. choose from that matrix the batch that has the least time per order (or time per item) (IMPORTANT: try different choices)
