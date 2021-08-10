@@ -308,6 +308,8 @@ def F_minDist(items, itemInfoList, packingStation):
     route.append(packingStation)
     return({"route":route, "distance": totalDist})
 
+
+
 def F_assignOrderToStation(orderAmount, itemInfoList, type = "full"):
     """ ???
     

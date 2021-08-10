@@ -2,9 +2,6 @@ import xml.etree.cElementTree as ET
 import numpy as np
 import copy
 
-import pandas as pd
-
-
 class PodLayout:
     def __init__(self, tierCount= None, tierHeight= None, humanCount= None, humanRad= None, humanMaxAcc= None, humanMaxDec= None,
                  humanMaxVel= None, humanTurnSpeed= None, boxCap= None, botCount= None, botRad= None, maxAcc= None, maxDec= None,
@@ -584,41 +581,22 @@ class Warehouse:
         self.ItemBundles = itemBundles
 
 
-
     # getting a list of feasible batches of open orders in the warehouse
     def getFeasibleBatches(self): # returns: Dict{batchID, List[Orders]}:
         '''
         TODO: write function to get feasible batches from open orders, that fulfil the weight constraint
         '''
+        feasibleBatchesDict = {}
+        cobotCapacity = self.Bots['0'].Capacity
 
 
-        # creating table with weights of orders
-        weights = []
-        orders = []
-        for i in range(len(self.Orders)):
-            weights.append(self.Orders[i].totalWeight)
-            orders.append(i)
+        for i in range(len(self.openOrders)):
+            print(i)
 
-        weight_table = pd.DataFrame({'orders':orders, 'weights':weights})
-        feasibleBatchesList = []
-        cobotCapicity = self.Bots['0'].Capactiy
 
-        def combinations(target, data):
-            for i in range(len(data)):
-                new_target = copy.copy(target)
-                new_data = copy.copy(data)
-                new_target.append(data[i])
-                new_data = data[i + 1:]
-                weights = weight_table.loc[new_target]["weights"]
-                if weights.sum() < cobotCapicity:
-                    if new_target not in feasibleBatchesList:
-                        feasibleBatchesList.append(new_target)
-                else:
-                    new_target = new_target[:-1]
-                combinations(new_target, new_data)
 
-        target = []
-        combinations(target, weight_table['orders'])
+            feasibleBatchesDict[i] = cobotCapacity
+
 
 
             #stationCopy = copy.deepcopy(station)
@@ -633,12 +611,40 @@ class Warehouse:
             #del stationCopy
 
 
-        self.feasibleBatches = feasibleBatchesList
+        self.feasibleBatches = feasibleBatchesDict
 
 
+    def getTravelRoute(self):#, feasibleBatches, OutputStations):
+
+        batch = [1,2]
+        outputStation = 'OutD0' #'OutD1'
+
+        # get list of order of items in batch
+        itemsInBatch = []
+        for i in batch:     # the orders in batch
+            for j in self.Orders[i].Positions:
+                itemsInBatch.append(self.Orders[i].Positions[str(j)])
+
+        # accumulate items
 
 
+        # get list of pods that have to be visited for these items
 
+
+        # initialize route with start = outputstation and distance = 0
+
+
+        # greedy heuristic, that chooses the first waypoint, then the next etc. until all of them have been visited
+
+
+        self.TravelRoute = 1
+
+
+    def getTravelTime(self, feasibleBatches, TravelRoute):
+        # calculates time based on the sequence of visited pods.
+
+
+        self.TravelTime = 1
 
 #Warehouse class, that holds all information about the warehouse
 class WarehouseLite:
