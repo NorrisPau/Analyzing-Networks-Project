@@ -581,17 +581,21 @@ class Warehouse:
         self.ItemBundles = itemBundles
 
 
-
     # getting a list of feasible batches of open orders in the warehouse
     def getFeasibleBatches(self): # returns: Dict{batchID, List[Orders]}:
         '''
         TODO: write function to get feasible batches from open orders, that fulfil the weight constraint
         '''
         feasibleBatchesDict = {}
+        cobotCapacity = self.Bots['0'].Capacity
+
 
         for i in range(len(self.openOrders)):
             print(i)
-            feasibleBatchesDict[i] = i
+
+
+
+            feasibleBatchesDict[i] = cobotCapacity
 
 
 
@@ -610,9 +614,37 @@ class Warehouse:
         self.feasibleBatches = feasibleBatchesDict
 
 
+    def getTravelRoute(self):#, feasibleBatches, OutputStations):
+
+        batch = [1,2]
+        outputStation = 'OutD0' #'OutD1'
+
+        # get list of order of items in batch
+        itemsInBatch = []
+        for i in batch:     # the orders in batch
+            for j in self.Orders[i].Positions:
+                itemsInBatch.append(self.Orders[i].Positions[str(j)])
+
+        # accumulate items
 
 
+        # get list of pods that have to be visited for these items
 
+
+        # initialize route with start = outputstation and distance = 0
+
+
+        # greedy heuristic, that chooses the first waypoint, then the next etc. until all of them have been visited
+
+
+        self.TravelRoute = 1
+
+
+    def getTravelTime(self, feasibleBatches, TravelRoute):
+        # calculates time based on the sequence of visited pods.
+
+
+        self.TravelTime = 1
 
 #Warehouse class, that holds all information about the warehouse
 class WarehouseLite:

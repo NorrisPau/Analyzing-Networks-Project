@@ -176,7 +176,7 @@ class Demo():
             # calculate feasible batches (weight constraint)
         instance.Warehouse.getFeasibleBatches(self.warehouseInstance)
             # calculate minim distance/time  (take from chans group) (decision metric for which batch to proicess)
-
+        instance.Warehouse.getTravelRoute(self.warehouseInstance)
 
 
         return self.solution1
