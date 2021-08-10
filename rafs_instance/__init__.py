@@ -227,8 +227,14 @@ class Order:
     def __init__(self,timeStamp):
         self.TimeStamp = timeStamp
         self.Positions = {}
+        self.totalWeight = None
+
     def AddPosition(self, pos):
         self.Positions[pos.ItemDescID] = pos
+
+    def getTotalWeight(self, totalWeightList):
+        self.totalWeight = sum(totalWeightList)
+
         
 #Class Item Bundle
 class ItemBundle:
@@ -544,18 +550,27 @@ class Warehouse:
             #Create order object and append it to order list        
             orderObj = Order(order.get('TimeStamp')) 
             #Loop over positions in order
+
+            totalWeightList = []
+
             for pos in order.iter('Position'):
                 
                 #TBD:
                 #Object for item position
                 orderItemPos = OrderItemPosition(pos.get('ItemDescriptionID'),pos.get('Count'))
-                
+
+
                 #Attach item position to order
                 orderObj.AddPosition(orderItemPos)
-            
+
+                weightOfPosition = itemDescriptions[str(orderItemPos.ItemDescID)].Weight * int(orderItemPos.Count)
+
+                totalWeightList.append(weightOfPosition)
+
                 #Object for item position
+            orderObj.getTotalWeight(totalWeightList)
             allOrders.append(orderObj)
-                
+
         for itemBun in root.iter('ItemBundle'):
             itemBunObj = ItemBundle(itemBun.get('TimeStamp'),itemBun.get('ItemDescriptionID'),itemBun.get('Size')) 
             itemBundles.append(itemBunObj)
@@ -566,6 +581,7 @@ class Warehouse:
         self.ItemBundles = itemBundles
 
 
+
     # getting a list of feasible batches of open orders in the warehouse
     def getFeasibleBatches(self): # returns: Dict{batchID, List[Orders]}:
         '''
@@ -573,7 +589,7 @@ class Warehouse:
         '''
         feasibleBatchesDict = {}
 
-        for i in range(len(self.Orders)):
+        for i in range(len(self.openOrders)):
             print(i)
             feasibleBatchesDict[i] = i
 
@@ -588,7 +604,7 @@ class Warehouse:
             # batches for each station
             #batchFromStation.append(
             #    {"station": packingStation, "batchInfo": F_orderToBatch(openOrders, itemInfoList, packingStation)})
-        #del stationCopy
+            #del stationCopy
 
 
         self.feasibleBatches = feasibleBatchesDict
