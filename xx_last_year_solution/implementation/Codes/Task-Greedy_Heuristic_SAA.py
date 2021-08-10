@@ -5,7 +5,7 @@
 
 #%% sourcing scripts
 import rafs_instance as instance
-import Codes.instance_demo as demo
+import instance_demo as demo
 import pandas as pd
 import copy
 import numpy as np
