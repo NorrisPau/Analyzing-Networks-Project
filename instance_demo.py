@@ -14,10 +14,10 @@ from os import path
 import math
 import json
 import time
-from operator import itemgetter, attrgetter 
+from operator import itemgetter, attrgetter
 from xml.dom import minidom
 import rafs_instance as instance
-from lxml import objectify
+import untangle
 
 layoutFile = r'data/layout/1-1-1-2-1.xlayo'
 podInfoFile = 'data/sku24/pods_infos.txt'
@@ -39,10 +39,10 @@ orders['10_5']=r'data/sku24/orders_10_mean_5_sku_24.xml'
 class WarehouseDateProcessing():
     def __init__(self, warehouseInstance, batch_size = None):
         self.Warehouse = warehouseInstance
-        self._InitSets(warehouseInstance, batch_size)   
+        self._InitSets(warehouseInstance, batch_size)
 
     def preprocessingFilterPods(self, warehouseInstance):
-        
+
         resize_pods = {}
         print("preprocessingFilterPods")
         item_id_list=[]
@@ -53,7 +53,7 @@ class WarehouseDateProcessing():
                 if item not in item_id_list:
                     item_id_list.append(item)
                     #print(item_id)
-       
+
         #for item in item_id_list:
         #    print(item)
 
@@ -64,73 +64,73 @@ class WarehouseDateProcessing():
                 if item.ID in item_id_list:
                     print("item.ID in item_id_list:", item.ID)
                     resize_pods[pod.ID] = pod
-        
+
         print(resize_pods)
         return resize_pods
 
-    # Initialize sets and parameters           
+    # Initialize sets and parameters
     def _InitSets(self,warehouseInstance, batch_size):
         #V Set of nodes, including shelves V^S and stations (depots)
         # V^D (V=V^S U V^D)
         #Add output and input depots
-        
+
         self.V__D__C = warehouseInstance.OutputStations
         ##self.V__D__F = warehouseInstance.InputStations
         self.V__D__F = {}
         #depot = ('D999', )
         #Old self.V__D = {'D999':depot}
-             
+
         self.V__D = {**self.V__D__C, **self.V__D__F}
-        
+
         #hli
         #self.V__S = warehouseInstance.Pods
         self.V__S = self.preprocessingFilterPods(warehouseInstance)
-        
+
         #Merge dictionaries
         self.V = {**self.V__D, **self.V__S}
 
     def CalculateDistance(self):
 
         file_path = r'data/distances/' + os.path.splitext(os.path.basename(self.Warehouse.InstanceFile))[0] + '.json'
-        
+
         if not path.exists(file_path):
             #Create d_ij
             #d_ij = tupledict()
             d_ij = {}
-            
+
             #Loop over all nodes
             for key_i, node_i in self.V.items():
-                for key_j, node_j in self.V.items():  
-                    
+                for key_j, node_j in self.V.items():
+
                     source = 'w'+node_i.GetPickWaypoint().ID
                     target = 'w'+node_j.GetPickWaypoint().ID
-                    
+
                     #Calc distance with weighted shortest path
                     d_ij[(key_i,key_j)] = nx.shortest_path_length(self.Graph, source=source, target=target, weight='weight')
-            
+
             #Parse and save
             d_ij_dict = {}
             for key,value in d_ij.items():
-                i,j = key  
+                i,j = key
                 if i not in d_ij_dict:
-                    d_ij_dict[i]={} 
+                    d_ij_dict[i]={}
                 d_ij_dict[i][j] = value
-            
+
             with open(file_path, 'w') as fp:
                 json.dump(d_ij_dict, fp)
-        
-        else: 
+
+        else:
             #Load and deparse
             with open(file_path, 'r') as fp:
                 d_ij_dict = json.load(fp)
-            print('d_ij file %s loaded'%(file_path)) 
-                
+            print('d_ij file %s loaded'%(file_path))
+
             #d_ij = tupledict()
             d_ij = {}
             for i, values in d_ij_dict.items():
                 for j, dist in values.items():
-                    d_ij[i,j] = dist                
-                
+                    d_ij[i,j] = dist
+
         return d_ij
 
 
@@ -140,22 +140,20 @@ class Solution():
     def __init__(self):
         # TODO: read the solution template file and use their structure for the solution class
         # figure out how to do this from their case or package
-        self.solutionTemplateFile = r'log_example.xml'
+        solutionTemplateFile = r'log_example.xml'
 
-        self.tree = ET.parse(self.solutionTemplateFile)
-        self.root = self.tree.getroot()
+        tree = ET.parse(solutionTemplateFile)
+        root = tree.getroot()
 
+        with open(solutionTemplateFile, 'r') as f:
+            xmlTemplate = f.read()
 
-        self.main = objectify.fromstring(self.solutionTemplateFile)
-        print(self.main.object1[0])  # content
-        print(self.main.object1[1] ) # contenbar
-        print(self.main.object1[0].get("attr"))  # name
-        print(self.main.test)  # me
+        self.solution = untangle.parse(xmlTemplate)
 
 
 class Demo():
     def __init__(self, splitOrders = False):
-        
+
         self.batch_weight = 18
         self.item_id_pod_id_dict = {}
         #[0]
@@ -175,9 +173,18 @@ class Demo():
     def t1Greedy(self):
         # top level method for the solution of task 1
         # TODO: implement the algorithm here
+            # calculate feasible batches (weight constraint)
+        instance.Warehouse.getFeasibleBatches(self.warehouseInstance)
+            # calculate minim distance/time  (take from chans group) (decision metric for which batch to proicess)
+
 
 
         return self.solution1
+
+
+
+
+
 
 
 	# warehouse instance
@@ -186,12 +193,12 @@ class Demo():
         #Every instance
         for key, instanceFile in instances.items():
             podAmount = key[0]
-            depotAmount = key[1]   
+            depotAmount = key[1]
             #For different orders
             for key, orderFile in orders.items():
                 orderAmount = key
                 #For storage policies
-                for storagePolicy, storagePolicyFile in storagePolicies.items():   
+                for storagePolicy, storagePolicyFile in storagePolicies.items():
                     warehouseInstance = instance.Warehouse(layoutFile, instanceFile, podInfoFile, storagePolicyFile, orderFile)
         return warehouseInstance
 
@@ -219,6 +226,10 @@ if __name__ == "__main__":
 
     _demo = Demo()
     solution1 = _demo.t1Greedy()
+
+
+
+    #solution1.savetoxml(path)
 
     #solution2 =
     #solution3 =

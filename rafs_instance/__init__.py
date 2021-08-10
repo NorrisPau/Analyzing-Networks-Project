@@ -1,5 +1,6 @@
 import xml.etree.cElementTree as ET
 import numpy as np
+import copy
 
 class PodLayout:
     def __init__(self, tierCount= None, tierHeight= None, humanCount= None, humanRad= None, humanMaxAcc= None, humanMaxDec= None,
@@ -168,6 +169,7 @@ class OutputStation(Station):
     def AddQueue(self,queue):
         self.Queues.append(queue)
 
+
 class Elevator:
     def __init__(self,ID):
         self.ID = ID
@@ -274,7 +276,10 @@ class Warehouse:
         self.PodLayout = None
         self.ItemDescriptions = None
         self.Orders = None
+        self.openOrders = None
+        self.assignedOrders = None
         self.ItemBundles = None
+        self.feasibleBatches = None
         
         #Import layout
         self.ImportLayout(layoutFile)
@@ -287,7 +292,16 @@ class Warehouse:
         
         #Import oders
         self.ImportOrders(orderFile)
-        
+        self.openOrders = copy.deepcopy(self.Orders)
+
+        # set assignedOrders
+        self.assignedOrders = []
+
+        #self.openOrders.pop(-1)
+        #self.openOrders.pop(-1)
+        #self.openOrders.pop(-1)
+
+
     #Import functions
     #Import layout functions
     def ImportLayout(self, file): 
@@ -498,11 +512,8 @@ class Warehouse:
                          j += 1
                      
         self.Pods = pods
-                
-    
-    
+
     #  Import orders
-    
     #Function for importing orders
     def ImportOrders(self, file):
         
@@ -543,7 +554,7 @@ class Warehouse:
                 orderObj.AddPosition(orderItemPos)
             
                 #Object for item position
-            allOrders.append(orderObj)   
+            allOrders.append(orderObj)
                 
         for itemBun in root.iter('ItemBundle'):
             itemBunObj = ItemBundle(itemBun.get('TimeStamp'),itemBun.get('ItemDescriptionID'),itemBun.get('Size')) 
@@ -553,6 +564,39 @@ class Warehouse:
         self.ItemDescriptions = itemDescriptions
         self.Orders = allOrders
         self.ItemBundles = itemBundles
+
+
+    # getting a list of feasible batches of open orders in the warehouse
+    def getFeasibleBatches(self): # returns: Dict{batchID, List[Orders]}:
+        '''
+        TODO: write function to get feasible batches from open orders, that fulfil the weight constraint
+        '''
+        feasibleBatchesDict = {}
+
+        for i in range(len(self.Orders)):
+            print(i)
+            feasibleBatchesDict[i] = i
+
+
+
+            #stationCopy = copy.deepcopy(station)
+            # calls the name of the packing station
+            #packingStation = list(stationCopy.keys())[i]
+            # calls the orders that belong to that station
+            #openOrders = list(stationCopy.values())[i]
+            # assign orders from list of orders to batches, procuding all feasible
+            # batches for each station
+            #batchFromStation.append(
+            #    {"station": packingStation, "batchInfo": F_orderToBatch(openOrders, itemInfoList, packingStation)})
+        #del stationCopy
+
+
+        self.feasibleBatches = feasibleBatchesDict
+
+
+
+
+
 
 #Warehouse class, that holds all information about the warehouse
 class WarehouseLite:
