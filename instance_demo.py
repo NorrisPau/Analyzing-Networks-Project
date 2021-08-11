@@ -134,8 +134,6 @@ class WarehouseDateProcessing():
         return d_ij
 
 
-
-
 class Solution():
     def __init__(self):
         # TODO: read the solution template file and use their structure for the solution class
@@ -175,15 +173,12 @@ class Demo():
         # TODO: implement the algorithm here
             # calculate feasible batches (weight constraint)
         instance.Warehouse.getFeasibleBatches(self.warehouseInstance)
-            # calculate minim distance/time  (take from chans group) (decision metric for which batch to proicess)
+
+        # calculate minim distance/time  (take from chans group) (decision metric for which batch to proicess)
         instance.Warehouse.getTravelRoute(self.warehouseInstance)
 
 
         return self.solution1
-
-
-
-
 
 
 
@@ -213,10 +208,8 @@ class Demo():
 
     def initSolution(self):
         print("[2] initializing solution class")
-        #solution = Solution()
+        solution = Solution()
         return solution
-
-
 
 
 
