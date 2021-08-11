@@ -268,7 +268,6 @@ class OrderItemPosition:
 def getFeasibleOrderCombinations(feasibleBatchesList, target, data, weight_table, cobotCapacity):
     for i in range(len(data)):
         new_target = copy.copy(target)
-        new_data = copy.copy(data)
         new_target.append(data[i])
         new_data = data[i + 1:]
         weights = weight_table.loc[new_target]["weights"]
@@ -621,7 +620,6 @@ class Warehouse:
 
         self.feasibleBatches = feasibleBatchesList
         self.feasibleBatchesDF = pd.DataFrame({0: feasibleBatchesList})
-
 
 
 
