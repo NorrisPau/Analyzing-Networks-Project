@@ -265,7 +265,7 @@ class OrderItemPosition:
 
 
 ######### FUNCTIONS
-def combinations(feasibleBatchesList, target, data, weight_table, cobotCapacity):
+def getFeasibleOrderCombinations(feasibleBatchesList, target, data, weight_table, cobotCapacity):
     for i in range(len(data)):
         new_target = copy.copy(target)
         new_data = copy.copy(data)
@@ -277,7 +277,7 @@ def combinations(feasibleBatchesList, target, data, weight_table, cobotCapacity)
                 feasibleBatchesList.append(new_target)
         else:
             new_target = new_target[:-1]
-        combinations(feasibleBatchesList, new_target, new_data, weight_table, cobotCapacity)
+        getFeasibleOrderCombinations(feasibleBatchesList, new_target, new_data, weight_table, cobotCapacity)
     return feasibleBatchesList
 #######################
 
@@ -617,7 +617,7 @@ class Warehouse:
         data = list(weight_table["orders"])
         cobotCapacity = self.Bots['0'].Capacity
 
-        feasibleBatchesList = combinations(feasibleBatchesList, target, data, weight_table, cobotCapacity)
+        feasibleBatchesList = getFeasibleOrderCombinations(feasibleBatchesList, target, data, weight_table, cobotCapacity)
 
         self.feasibleBatches = feasibleBatchesList
         self.feasibleBatchesDF = pd.DataFrame({0: feasibleBatchesList})
