@@ -153,7 +153,6 @@ class Demo():
     def __init__(self, splitOrders = False):
 
         self.batch_weight = 18
-        self.item_id_pod_id_dict = {}
         #[0]
         self.warehouseInstance = self.prepareData()
         self.distance_ij = self.initData()
@@ -163,9 +162,12 @@ class Demo():
         else:
             self.is_storage_dedicated = False
 
+        self.item_id_pod_id_dict = self.getPodforItems()
+
         self.solution1 = self.initSolution()
         self.solution2 = self.initSolution()
         self.solution3 = self.initSolution()
+
 
 
     def t1Greedy(self):
@@ -175,10 +177,92 @@ class Demo():
         instance.Warehouse.getFeasibleBatches(self.warehouseInstance)
 
         # calculate minim distance/time  (take from chans group) (decision metric for which batch to proicess)
-        instance.Warehouse.getTravelRoute(self.warehouseInstance)
+        self.getTravelRoute()
 
 
         return self.solution1
+
+    def getPodforItems(self):
+        ''':key
+        method to collect the pod in which each item is located. can be adapoted for a mixed storage policy where items can be contained in multiple pods.
+        '''
+
+        item_id_pod_id_dict = {} #initialize dictionary for item pod location
+        for i in self.warehouseInstance.ItemDescriptions:
+            itemPodID = self.warehouseInstance.ItemDescriptions[i].ItemPodID
+            item_id_pod_id_dict[itemPodID] = []
+
+            for j in self.warehouseInstance.Pods:
+                for k in range(len(self.warehouseInstance.Pods[j].Items)):
+                    if self.warehouseInstance.Pods[j].Items[k].ID == itemPodID:
+                        item_id_pod_id_dict[itemPodID].append(j)
+
+
+        return item_id_pod_id_dict  # a dictionary with item IDs as keys and a list of pod locations as value.
+
+
+    def getTravelRoute(self):#, Batch, OutputStation):
+        '''
+        calculates the route and travel time of each batch, based on the batch and the output station
+        :return: travel time and route
+        '''
+        #INPUTS:
+        Batch = [1,2]
+        OutputStation = 'OutD0' #'OutD1'
+
+        #OUTPUTS:
+        total_time = 0
+        waypoints_list = []
+
+        # get list of order of items in batch
+        itemsInBatch = []
+        for i in Batch:     # the orders in batch
+            for j in self.warehouseInstance.Orders[i].Positions:
+                itemsInBatch.append(self.warehouseInstance.Orders[i].Positions[str(j)])
+
+        # accumulate items
+        ItemsDict = {}
+        for j in itemsInBatch:
+            ItemsDict[j.ItemDescID] = 0
+        for k in itemsInBatch:
+            ItemsDict[k.ItemDescID] = int(ItemsDict[k.ItemDescID]) + int(k.Count)
+
+        # get ItemPodID for ItemID
+        ItemPodID = {}
+        for i in ItemsDict:
+            ItemPodID[i] = self.warehouseInstance.ItemDescriptions[i].ItemPodID
+
+        # get the pod ID for each Item
+        PodID = {}
+        for i in ItemsDict:
+            PodID[i] = self.item_id_pod_id_dict[ItemPodID[i]]
+
+        # collecting all information in dataframe
+        itemsdf = pd.DataFrame({'items':ItemsDict.keys(), 'quantity':ItemsDict.values(), 'ItemPodID':ItemPodID.values(), 'PodID': PodID.values()})
+
+
+        print(ItemsDict)
+        print(itemsdf)
+        # get list of pods that have to be visited for these items
+
+
+        # choose pod sequence to be visited
+
+
+        # initialize route with start = outputstation and distance = 0
+
+
+        # greedy heuristic, that chooses the first waypoint, then the next etc. until all of them have been visited
+
+
+        self.TravelRoute = 1
+
+
+    def getTravelTime(self, feasibleBatches, TravelRoute):
+        # calculates time based on the sequence of visited pods.
+
+
+        self.TravelTime = 1
 
 
 

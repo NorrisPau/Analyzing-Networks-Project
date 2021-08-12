@@ -247,6 +247,7 @@ class ItemDescription:
         self.Weight = float(weight)
         self.Letter = letter
         self.Color = color
+        self.ItemPodID = self.Color + '/' + self.Letter
         
 #Container for item position and count
 class ItemPosition:
@@ -537,7 +538,7 @@ class Warehouse:
         self.Pods = pods
 
     #  Import orders
-    #Function for importing orders
+    #Function for importing orders and itemDescription
     def ImportOrders(self, file):
         
         
@@ -623,48 +624,7 @@ class Warehouse:
 
 
 
-    def getTravelRoute(self):#, feasibleBatches, OutputStations):
 
-        batch = [1,2]
-        outputStation = 'OutD0' #'OutD1'
-
-        # get list of order of items in batch
-        itemsInBatch = []
-        for i in batch:     # the orders in batch
-            for j in self.Orders[i].Positions:
-                itemsInBatch.append(self.Orders[i].Positions[str(j)])
-
-        # accumulate items
-        ItemsDict = {}
-        for j in itemsInBatch:
-            ItemsDict[j.ItemDescID] = 0
-
-        for k in itemsInBatch:
-            ItemsDict[k.ItemDescID] = int(ItemsDict[k.ItemDescID]) + int(k.Count)
-
-        itemsdf = pd.DataFrame({'items':ItemsDict.keys(), 'quantity':ItemsDict.values()})
-
-        print(ItemsDict)
-        # get list of pods that have to be visited for these items
-
-
-        # choose pod sequence to be visited
-
-
-        # initialize route with start = outputstation and distance = 0
-
-
-        # greedy heuristic, that chooses the first waypoint, then the next etc. until all of them have been visited
-
-
-        self.TravelRoute = 1
-
-
-    def getTravelTime(self, feasibleBatches, TravelRoute):
-        # calculates time based on the sequence of visited pods.
-
-
-        self.TravelTime = 1
 
 #Warehouse class, that holds all information about the warehouse
 class WarehouseLite:
