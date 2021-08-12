@@ -85,3 +85,42 @@ that is faster than the packing time of the packer for the previously delivered 
 
 
 '''
+
+'''
+Calculate distance/time per Batch
+
+1. Total Batch Time
+total_time = 0
+items in batch
+current_location_robot
+
+
+while items in batch not 0:
+    closest_distance_to_next_item = xx
+    if current_location_shelf is in the same zone as next item shelf:
+      total_time += distance/1.3 #human picker walking speed
+      total_time += 3 #add human picking time per item
+    else:
+      total_time += distance/2.0 #robot
+      total_time += 3 #add human picking time per item
+
+
+    update current_location_robot
+    update items in batch (delete ones already picked up)
+
+
+
+total_distance = total_distance +  distance_robot_packing_station
+return total_distance    #distance of entire batch
+
+
+
+Note for Paper:
+- Assumption 3 (2 cobots waiting) is optional if we have more time lol
+- For optimal route we chose a greedy traveling salesman problem where we always choose the next closest path (Item)
+
+
+2. Human Time
+'''
+
+
