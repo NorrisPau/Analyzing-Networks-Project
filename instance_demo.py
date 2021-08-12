@@ -2,6 +2,10 @@
 import numpy as np
 import xml.etree.cElementTree as ET
 import networkx as nx
+
+import networkx.algorithms.approximation as approximation
+
+
 import matplotlib.pyplot as plt
 import pandas as pd
 import itertools
@@ -18,6 +22,8 @@ from operator import itemgetter, attrgetter
 from xml.dom import minidom
 import rafs_instance as instance
 import untangle
+import numpy as np
+import itertools
 
 layoutFile = r'data/layout/1-1-1-2-1.xlayo'
 podInfoFile = 'data/sku24/pods_infos.txt'
@@ -241,26 +247,71 @@ class Demo():
         itemsdf = pd.DataFrame({'items':ItemsDict.keys(), 'quantity':ItemsDict.values(), 'ItemPodID':ItemPodID.values(), 'PodID': PodID.values()})
 
 
-        print(ItemsDict)
-        print(itemsdf)
-        # get list of pods that have to be visited for these items
+        # generating a list of nodes to be visited, with the starting/ending node in the first list position
+        # this will be used as an inout to the networkx tsp algorithm
+        # generally, it would be possible to make one list for each outputStation and compare the time of traveling sequence
+        # that is given my the TSP algo of NX.
+        stationsToVisit = [item for elem in list(PodID.values()) for item in elem]
+        stationsToVisit.insert(0, OutputStation)
+
+        ################################################################################################
+        ################################################################################################
+        # Generating a network from the pods/stations and distances
+        G = nx.Graph()
+        # adding all nodes and edges to the network graph
+        all_nodes = list(self.warehouseInstance.OutputStations) + list(self.warehouseInstance.Pods)
+        G.add_nodes_from(all_nodes)
+        G.add_edges_from(self.distance_ij)     ## weighted edged are taken in the format [[1,2,666],[2,3,5565],[],[],[]]
+        # setting the edges weights.
+        nx.set_edge_attributes(G, values=self.distance_ij, name='weight')
+
+        ## checking some propeties of the G graph, can be deleted later.
+        # TODO: delete
+        len(self.distance_ij)
+        G.number_of_edges()
+        G.number_of_nodes()
+        G.nodes['1']
+
+        G.edges['1', 'OutD1']
+        G.edges['OutD1', '1']
+
+        G.edges['OutD1', '1']
+        G.edges['1', '2']
+        G.edges['2', 'OutD1']
+
+        G.edges['2', '2']
 
 
-        # choose pod sequence to be visited
+        G['4']['5']["weight"]
 
+        nx.draw(G, with_labels = True)
+        plt.savefig("network_img1.png")
+        ####
 
-        # initialize route with start = outputstation and distance = 0
+        ################################################################################################
+        ##################################   TSP from NetworkX   #######################################
+        ################################################################################################
+        SA_tsp = approximation.traveling_salesman.simulated_annealing_tsp
+        tsp = approximation.traveling_salesman.traveling_salesman_problem
 
+        tsp_method = lambda G, wt: SA_tsp(G, "greedy", weight=wt, temp=500)
+        tsp(G, nodes=stationsToVisit, method=tsp_method)
+        print(tsp)
+        ################################################################################################
+        ################################################################################################
 
-        # greedy heuristic, that chooses the first waypoint, then the next etc. until all of them have been visited
+        # TODO: Test TSP algorithm with various sequences of stations to visit
+        # TODO: Define a method (below: getTravelTime) for an arbitrary sequence of waypoints to be visited,
+
 
 
         self.TravelRoute = 1
 
 
-    def getTravelTime(self, feasibleBatches, TravelRoute):
-        # calculates time based on the sequence of visited pods.
 
+    def getTravelTime(self, TravelRoute, numberOfItems):
+        # calculates time based on the sequence of visited pods.
+        # TODO: make this function based on the output of the TSP problem
 
         self.TravelTime = 1
 
