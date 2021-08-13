@@ -244,7 +244,7 @@ class Demo():
             PodID[i] = self.item_id_pod_id_dict[ItemPodID[i]]
 
         # collecting all information in dataframe
-        itemsdf = pd.DataFrame({'items':ItemsDict.keys(), 'quantity':ItemsDict.values(), 'ItemPodID':ItemPodID.values(), 'PodID': PodID.values()})
+        batchItemsDF = pd.DataFrame({'items':ItemsDict.keys(), 'quantity':ItemsDict.values(), 'ItemPodID':ItemPodID.values(), 'PodID': PodID.values()})
 
 
         # generating a list of nodes to be visited, with the starting/ending node in the first list position
@@ -286,7 +286,10 @@ class Demo():
 
         nx.draw(G, with_labels = True)
         plt.savefig("network_img1.png")
-        ####
+
+        nx.is_connected(G) ## has to be true always
+        nx.is_weakly_connected(G)
+        #### TODO: delete until here
 
         ################################################################################################
         ##################################   TSP from NetworkX   #######################################
@@ -295,23 +298,36 @@ class Demo():
         tsp = approximation.traveling_salesman.traveling_salesman_problem
 
         tsp_method = lambda G, wt: SA_tsp(G, "greedy", weight=wt, temp=500)
-        tsp(G, nodes=stationsToVisit, method=tsp_method)
-        print(tsp)
+        chosenTravelRoute = tsp(G, nodes=stationsToVisit, method=tsp_method)
+        print(chosenTravelRoute)
         ################################################################################################
         ################################################################################################
 
         # TODO: Test TSP algorithm with various sequences of stations to visit
-        # TODO: Define a method (below: getTravelTime) for an arbitrary sequence of waypoints to be visited,
+        # TODO: write the chosen route to the feasibleBatches dataframe as an entry in a dedicated column for each output station
+
+        # calculating the travel time of the chosen Route # TODO: check this out Nora!!
+        BotVelocity = 1.3       #dynamically draw this value from BotClass
+        ItemPickingTime = 3     # dynamially draw this item from warehouse class
+        TravelTime = nx.classes.function.path_weight(G, chosenTravelRoute, 'weight') * BotVelocity
+        PickingTime = TravelTime + batchItemsDF['quantity'].sum() * ItemPickingTime
+
+        TotalRouteTime = TravelTime + PickingTime
+
+        self.TravelRoute = chosenTravelRoute
+        self.TravelRouteTime = TotalRouteTime
 
 
-
-        self.TravelRoute = 1
-
-
-
-    def getTravelTime(self, TravelRoute, numberOfItems):
-        # calculates time based on the sequence of visited pods.
+    def getTravelTime(self):#, TravelRoute, numberOfItems):
+        # calculates time based on the sequence of visited pods and the number of items picked up from there.
         # TODO: make this function based on the output of the TSP problem
+        # is calculated in above function with networkx functionality
+        TravelRoute = ['OutD0', '12', '16', '17', '4', '9', '2', '7', '1', 'OutD0']
+
+        ## each item takes 3 seconds to pick, so we can just sum up the product of: number of items*time to pick
+        totalNumberofItemsPicked =  9    # BatchItemDF['quantity'].sum()
+
+
 
         self.TravelTime = 1
 
