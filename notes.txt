@@ -124,3 +124,45 @@ Note for Paper:
 '''
 
 
+
+
+
+
+
+############################################################################
+############################################################################
+############################################################################
+
+1. assign orders to stations
+    for i in orders:
+        assign order to station with minimum totalWeight
+            ## output station / bot need attribute called assignedOrders
+                ## assigned Orders need to be of Class Order
+
+                OutputStation.Orders.totalWeights.sum()
+            add to assignedOrders Attribute of Warehouse Class
+            delete from openOrders Attribute of Warehouse Class
+
+
+
+
+2. make batches out of all orders assigned to a station
+           inside the station, batch up the orders
+
+
+3. pick a batch from feasible batches
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

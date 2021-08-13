@@ -163,9 +163,46 @@ class OutputStation(Station):
             self.Queues = []
         else:
             self.Queues = queues
+        self.totalWeight = 0
+        self.feasibleBatches = []
+        self.feasibleBatchesDF = pd.DataFrame
         
     def AddQueue(self,queue):
         self.Queues.append(queue)
+
+    def UpdateWeight(self):
+        if len(self.Queues) == 0:
+            self.totalWeight = 0
+        else:
+            weightList = []
+            for i in range(len(self.Queues)):
+                weightList.append(self.Queues[i].totalWeight)
+        self.totalWeight = sum(weightList)
+
+    def getFeasibleBatches(self): # returns: Dict{batchID, List[Orders]}:
+        '''
+        function that gets all feasible batches for a respective Output Station, depending on the orders that were assigned to it.
+        '''
+
+        # creating table with weights of orders
+        weights = []
+        orders = []
+        for i in range(len(self.Queues)):
+            weights.append(self.Queues[i].totalWeight)
+            orders.append(i)
+
+        weight_table = pd.DataFrame({'orders':orders, 'weights':weights})
+        feasibleBatchesList = []
+        target = []
+        data = list(weight_table["orders"])
+        cobotCapacity = 18 # spuld be drawn from dynamic variable (_demo.batch_weight)
+
+        feasibleBatchesList = getFeasibleOrderCombinations(feasibleBatchesList, target, data, weight_table, cobotCapacity)
+
+        self.feasibleBatches = feasibleBatchesList
+        self.feasibleBatchesDF = pd.DataFrame({0: feasibleBatchesList})
+
+
 
 class Elevator:
     def __init__(self,ID):
@@ -319,6 +356,8 @@ class Warehouse:
 
         # set assignedOrders
         self.assignedOrders = []
+
+        self.ItemPodLocations = self.getPodsforItems()
 
         #self.openOrders.pop(-1)
         #self.openOrders.pop(-1)
@@ -598,29 +637,88 @@ class Warehouse:
         self.Orders = allOrders
         self.ItemBundles = itemBundles
 
-    # getting a list of feasible batches of open orders in the warehouse
-    def getFeasibleBatches(self): # returns: Dict{batchID, List[Orders]}:
+    def getPodsforItems(self):
+        ''':key
+        method to collect the pod in which each item is located. can be adapoted for a mixed storage policy where items can be contained in multiple pods.
         '''
-        TODO: write function to get feasible batches from open orders, that fulfil the weight constraint
+
+        item_id_pod_id_dict = {} #initialize dictionary for item pod location
+        for i in self.ItemDescriptions:
+            itemPodID = self.ItemDescriptions[i].ItemPodID
+            item_id_pod_id_dict[itemPodID] = []
+
+            for j in self.Pods:
+                for k in range(len(self.Pods[j].Items)):
+                    if self.Pods[j].Items[k].ID == itemPodID:
+                        item_id_pod_id_dict[itemPodID].append(j)
+
+
+        return item_id_pod_id_dict  # a dictionary with item IDs as keys and a list of pod locations as value.
+
+    def getItemsInBatch(self, batch, outputStationKey):
+        '''
+        calculates the route and travel time of each batch, based on the batch and the output station
+        :return: travel time and route
+        '''
+        #INPUTS:
+        Batch = [1,2]       ## draw this from function call
+
+        # get list of order of items in batch
+        # TODO: hier müssen wir die orders vom batch finden und die items in eine liste schreiben)
+        # get orderpositions from orderQueue inside of OutputStation
+        itemsInBatch = []
+        for i in Batch:     # the orders in batch
+            for j in self.OutputStations[outputStationKey].feasibleBatches:#Orders[i].Positions:
+                itemsInBatch.append(self.Orders[i].Positions[str(j)])
+
+
+
+        # accumulate items
+        ItemsDict = {}
+        for j in itemsInBatch:
+            ItemsDict[j.ItemDescID] = 0
+        for k in itemsInBatch:
+            ItemsDict[k.ItemDescID] = int(ItemsDict[k.ItemDescID]) + int(k.Count)
+
+        # get ItemPodID for ItemID
+        ItemPodID = {}
+        for i in ItemsDict:
+            ItemPodID[i] = self.ItemDescriptions[i].ItemPodID
+
+        # get the pod ID for each Item
+        PodID = {}
+        for i in ItemsDict:
+            PodID[i] = self.ItemPodLocations[ItemPodID[i]]
+
+        # collecting all information in dataframe
+        batchItemsDF = pd.DataFrame({'items':ItemsDict.keys(), 'quantity':ItemsDict.values(), 'ItemPodID':ItemPodID.values(), 'PodID': PodID.values()})
+
+
+
+    # getting a list of feasible batches of open orders in the warehouse
+    def getFeasibleBatchesWH(self): # returns: Dict{batchID, List[Orders]}:
+        '''
+        function that gets all feasible batches for a respective Output Station, depending on the orders that were assigned to it.
         '''
 
         # creating table with weights of orders
         weights = []
         orders = []
-        for i in range(len(self.Orders)):
-            weights.append(self.Orders[i].totalWeight)
+        for i in range(len(self.openOrders)):
+            weights.append(self.openOrders[i].totalWeight)
             orders.append(i)
 
         weight_table = pd.DataFrame({'orders':orders, 'weights':weights})
         feasibleBatchesList = []
         target = []
         data = list(weight_table["orders"])
-        cobotCapacity = self.Bots['0'].Capacity
+        cobotCapacity = 18 # spuld be drawn from dynamic variable (_demo.batch_weight)
 
         feasibleBatchesList = getFeasibleOrderCombinations(feasibleBatchesList, target, data, weight_table, cobotCapacity)
 
         self.feasibleBatches = feasibleBatchesList
         self.feasibleBatchesDF = pd.DataFrame({0: feasibleBatchesList})
+
 
 
 
