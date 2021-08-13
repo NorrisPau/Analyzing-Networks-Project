@@ -120,7 +120,25 @@ Note for Paper:
 - For optimal route we chose a greedy traveling salesman problem where we always choose the next closest path (Item)
 
 
-2. Human Time
 '''
 
 
+
+
+'''
+New (13.08.) Greedy Heuristic
+
+1. Assign orders to stations
+- Assign first order randomly to a Packing station
+- Assign output station with smallest total weight next order
+
+
+2. Assign orders to batches of cobots
+- batch up the orders based on weight constraint
+- 1 cobot for 1 packing station
+
+3. Determine the sequencing of visiting pods for each cobot within a route
+-
+
+1.
+'''
