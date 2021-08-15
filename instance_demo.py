@@ -1,4 +1,5 @@
-#example to use
+#example to
+import time
 import numpy as np
 import xml.etree.cElementTree as ET
 import networkx as nx
@@ -47,7 +48,7 @@ class WarehouseDateProcessing():
     def preprocessingFilterPods(self, warehouseInstance):
 
         resize_pods = {}
-        print("preprocessingFilterPods")
+        #print("preprocessingFilterPods")
         item_id_list=[]
         for order in warehouseInstance.Orders:
             for pos in order.Positions.values():
@@ -65,10 +66,10 @@ class WarehouseDateProcessing():
             for item in pod.Items:
                 #print("item in pod.Items:", item.ID)
                 if item.ID in item_id_list:
-                    print("item.ID in item_id_list:", item.ID)
+                    #print("item.ID in item_id_list:", item.ID)
                     resize_pods[pod.ID] = pod
 
-        print(resize_pods)
+        #print(resize_pods)
         return resize_pods
 
     # Initialize sets and parameters
@@ -126,7 +127,7 @@ class WarehouseDateProcessing():
             #Load and deparse
             with open(file_path, 'r') as fp:
                 d_ij_dict = json.load(fp)
-            print('d_ij file %s loaded'%(file_path))
+            #print('d_ij file %s loaded'%(file_path))
 
             #d_ij = tupledict()
             d_ij = {}
@@ -174,6 +175,7 @@ class Demo():
 
 
     def t1Greedy(self):
+        timer_start = time.time()
 
         # calculates all feasible batches of the given orders
         self.warehouseInstance.getFeasibleBatches()
@@ -189,8 +191,11 @@ class Demo():
         for OutputStationID in self.warehouseInstance.OutputStations:
             self.shortestPathTSP(OutputStationID)
 
+        time_tsp = (time.time() - timer_start)
+        print(f"[TIME] Calculated {len(self.warehouseInstance.BatchesDF)} Batches x {len(self.warehouseInstance.OutputStations)} in {time_tsp} seconds")
+        print(f"[TIME] That is {len(self.warehouseInstance.BatchesDF)*len(self.warehouseInstance.OutputStations)} TSPs with {len(self.warehouseInstance.BatchesDF)*len(self.warehouseInstance.OutputStations)/time_tsp} TSPs per second")
+
         # TODO: check self.warehouseInstance.BatchesDF which contains all the information.
-        print(1)
 
 
 
@@ -539,7 +544,5 @@ if __name__ == "__main__":
 
     #solution2 =
     #solution3 =
-    print(solution1)
-    print("todo:")
 
 
