@@ -640,6 +640,7 @@ class Warehouse:
         '''
         function that gets all feasible batches for a respective Output Station, depending on the orders that were assigned to it.
         '''
+        print("[4] Calculating feasible batches for all orders ")
 
         # creating table with weights of orders
         weights = []
@@ -665,6 +666,7 @@ class Warehouse:
         ''':key
         method to collect the pod in which each item is located. can be adapoted for a mixed storage policy where items can be contained in multiple pods.
         '''
+        print("[3] Calculating pro Location for Items ")
 
         item_id_pod_id_dict = {} #initialize dictionary for item pod location
         for i in self.ItemDescriptions:
@@ -685,12 +687,15 @@ class Warehouse:
         calculates the route and travel time of each batch, based on the batch and the output station
         :return: travel time and route
         '''
+        print("[3] Calculating Item List and Pod Locations for Batches")
+
         AllBatchesItems = []
         AllBatchesItemsDict = []
         AllBatchesItemPodID = []
         AllBatchesPodID = []
         AllStations = []
         AllItemCounts = []
+        AllOrderCounts = []
 
         for k in self.feasibleBatches:
             Batch = k
@@ -728,7 +733,7 @@ class Warehouse:
 
             stationsToVisit = [item for elem in list(PodID.values()) for item in elem]
 
-
+            AllOrderCounts.append(len(Batch))
             AllBatchesItemPodID.append(ItemPodID)
             AllBatchesPodID.append(PodID)
             AllStations.append(stationsToVisit)
@@ -738,6 +743,7 @@ class Warehouse:
         self.BatchesDF['ItemsinBatch'] = AllBatchesItems
         self.BatchesDF['ItemsinBatchDict'] = AllBatchesItemsDict
         self.BatchesDF['ItemCount'] = AllItemCounts
+        self.BatchesDF['OrderCount'] = AllOrderCounts
         self.BatchesDF['ItemPodID'] = AllBatchesItemPodID
         self.BatchesDF['PodIDs'] = AllBatchesPodID
         self.BatchesDF['StationsToVisit'] = AllStations

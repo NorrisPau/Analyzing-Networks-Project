@@ -43,6 +43,7 @@ table = pd.DataFrame({'orders':data, 'weights':y_data})
 combinations(target,data)
 
 
+
 import numpy as np
 
 batch_penalty = []
@@ -158,8 +159,7 @@ while len(OrdersTable) > 0:
     dropping_rows = OrdersTable.orders.apply(lambda x: any(item in next_batch for item in x))
     OrdersTable = OrdersTable[dropping_rows == False]
 
+
 print(BatchAssignCobot_List)
 print(TimeCobot_List)
 print(TimePacker_List)
-
-
