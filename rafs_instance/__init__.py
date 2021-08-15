@@ -653,12 +653,13 @@ class Warehouse:
         feasibleBatchesList = []
         target = []
         data = list(weight_table["orders"])
-        cobotCapacity = 18 # spuld be drawn from dynamic variable (_demo.batch_weight)
+        cobotCapacity = 18 # should be drawn from dynamic variable (_demo.batch_weight)
 
         feasibleBatchesList = getFeasibleOrderCombinations(feasibleBatchesList, target, data, weight_table, cobotCapacity)
 
         self.feasibleBatches = feasibleBatchesList
         self.BatchesDF = pd.DataFrame({'Batch': feasibleBatchesList})
+        self.BatchesDF['BatchID'] = np.arange(len(self.BatchesDF))
         self.BatchesDF.set_index('Batch')
 
     # generates a dictionary that contains a list of pod locations for each item.

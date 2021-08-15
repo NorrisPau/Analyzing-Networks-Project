@@ -22,6 +22,7 @@ import rafs_instance as instance
 import untangle
 import numpy as np
 import itertools
+import copy
 
 layoutFile = r'data/layout/1-1-1-2-1.xlayo'
 podInfoFile = 'data/sku24/pods_infos.txt'
@@ -257,8 +258,6 @@ class Demo():
         ItemPickingTime = 3  # dynamially draw this item from warehouse class
 
 
-
-
         AllChosenRoutes = []
         AllTravelTimes = []
         AllBatchesStations = list(self.warehouseInstance.BatchesDF['StationsToVisit'])
@@ -267,8 +266,10 @@ class Demo():
         tsp = approximation.traveling_salesman.traveling_salesman_problem
         tsp_method = lambda G, wt: SA_tsp(G, "greedy", weight=wt, temp=500)
 
+
         i = 0
-        for stationsToVisit in AllBatchesStations:
+        for j in AllBatchesStations:
+            stationsToVisit = copy.deepcopy(j)
             stationsToVisit.insert(0, OutputStation)
 
             ######################################################################
@@ -284,9 +285,9 @@ class Demo():
             i += 1
 
         # output: shortest path TSP
-        col_name_route = 'shortestRoute_'+OutputStation
-        col_name_time = 'travelTime_'+OutputStation
-        col_name_time_per_order = 'travelTimeperOrder_'+OutputStation
+        col_name_route = 'shortestRoute_' + OutputStation
+        col_name_time = 'travelTime_' + OutputStation
+        col_name_time_per_order = 'travelTimeperOrder_' + OutputStation
         self.warehouseInstance.BatchesDF[col_name_route] = AllChosenRoutes
         self.warehouseInstance.BatchesDF[col_name_time] = AllTravelTimes
         self.warehouseInstance.BatchesDF[col_name_time_per_order] = self.warehouseInstance.BatchesDF[col_name_time] / self.warehouseInstance.BatchesDF['OrderCount']
@@ -407,6 +408,8 @@ class Demo():
         self.BatchAssignCobot_List = BatchAssignCobot_List
         self.TimeCobot_List = TimeCobot_List
         self.TimePacker_List = TimePacker_List  #TODO: could this be used as a makespan time? max(TimeCobot_List, TimePacker_List)
+
+
 
 
     # deprecated/unused:
@@ -641,7 +644,7 @@ if __name__ == "__main__":
 
     # applying greedy heuristic to find solution for task 1
     _demo.greedyHeuristicT1()
-
+    print(1)
     #solution1.savetoxml(path)
 
     #solution2 =
