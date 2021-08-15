@@ -2,10 +2,7 @@
 import numpy as np
 import xml.etree.cElementTree as ET
 import networkx as nx
-
 import networkx.algorithms.approximation as approximation
-
-
 import matplotlib.pyplot as plt
 import pandas as pd
 import itertools
@@ -177,6 +174,31 @@ class Demo():
 
 
     def t1Greedy(self):
+
+        # calculates all feasible batches of the given orders
+        self.warehouseInstance.getFeasibleBatches()
+
+        # calculates the items and pod locations for all the batches and writes it to BatchesDF
+        self.warehouseInstance.getItemPodsBatchDF()
+
+        # generates a Graph of the Warehouse to be used in traveling salesman probelem.
+        self.generateGraph()
+
+        # calculates shortest route and traveling time for each batch with regards to the output staion
+        # and passed the result in the batches dataframe.
+        for OutputStationID in self.warehouseInstance.OutputStations:
+            self.shortestPathTSP(OutputStationID)
+
+        # TODO: check self.warehouseInstance.BatchesDF which contains all the information.
+        print(1)
+
+
+
+        # alternative way to work with dataframes and functions
+        # kw_df['kw_umlaute'] = kw_df.apply(lambda kw_df: reduce_umlaut(kw_df['kw_umlaute']), axis = 1)
+
+        ''' Fehlgeleitete Idee
+        ### zuerst orders an die packing stations assignen ###
         # 1 first of all, we assign the order to the packing stations baes on weight.
         self.assignOrdersToPackingStations()
 
@@ -185,31 +207,91 @@ class Demo():
             OutputStationKey = 'OutD' + str(j)
             self.warehouseInstance.OutputStations[OutputStationKey].getFeasibleBatches()
 
-        # 3 pick a batch and determine traveling sequence for the cobot.
+        # 3 pick a batch with greedy heuristic
         for i in range(len(self.warehouseInstance.OutputStations)):
             OutputStationKey = 'OutD' + str(j)
             iter = 0
             while self.warehouseInstance.OutputStations[OutputStationKey].feasibleBatches != []:
+
+                Batch = 0
+
                 # for the first iteration of batch assignment, we just chose any batch with
-                if iter = 0:
-
+                if iter == 0:
+                    # pick the first batch with just 1 item/order so that the packer starts working quickly.
+                    pass
                 else:
+                    # pick the first batch that has longer collection time than the packing time of the previous batch
+                    pass
+                    self.warehouseInstance.getItemsInBatch(['1', '2'], 'OutD0')
 
-                # feasibleBatches remove all entries that contain fulfilledOrders
+                # feasibleBatches: remove all entries that contain fulfilledOrders
                 iter += 1
 
-            # for the first batch. just send out any batch with only 1 order,
-            # so that the cobot return quickly and the packer can start working
+
+
+        # 4 determine the visiting sequence for each cobot/pod
+
+        # 5 add the picked batch to the solution S
+        # remove all batches that contain the fulfilled orders
+
+
 
         # calculate minim distance/time  (take from chans group) (decision metric for which batch to proicess)
         #self.getTravelRoute()
 
         print(1)
         return self.solution1
+        '''
+
+
+    def shortestPathTSP(self, OutputStation):
+        # input: packing station
+               # stationstovisit
+
+        BotVelocity = 2  # dynamically draw this value from BotClass
+        PickerVelocity = 1.3  # picker speed
+        ItemPickingTime = 3  # dynamially draw this item from warehouse class
 
 
 
 
+        AllChosenRoutes = []
+        AllTravelTimes = []
+        AllBatchesStations = list(self.warehouseInstance.BatchesDF['StationsToVisit'])
+
+        SA_tsp = approximation.traveling_salesman.simulated_annealing_tsp
+        tsp = approximation.traveling_salesman.traveling_salesman_problem
+        tsp_method = lambda G, wt: SA_tsp(G, "greedy", weight=wt, temp=500)
+
+        i = 0
+        for stationsToVisit in AllBatchesStations:
+            stationsToVisit.insert(0, OutputStation)
+
+            ######################################################################
+            chosenTravelRoute = tsp(self.warehouseInstance.WarehouseGraph, nodes=stationsToVisit, method=tsp_method)
+
+            TravelTime = nx.classes.function.path_weight(self.warehouseInstance.WarehouseGraph, chosenTravelRoute, 'weight') / BotVelocity
+            PickingTime = TravelTime + self.warehouseInstance.BatchesDF['ItemCount'][i] * ItemPickingTime
+
+            TotalRouteTime = TravelTime + PickingTime
+            ######################################################################
+            AllChosenRoutes.append(chosenTravelRoute)
+            AllTravelTimes.append(TotalRouteTime)
+            i += 1
+
+        # output: shortest path TSP
+        col_name_route = 'shortestRoute_'+OutputStation
+        col_name_time = 'travelTime_'+OutputStation
+        self.warehouseInstance.BatchesDF[col_name_route] = AllChosenRoutes
+        self.warehouseInstance.BatchesDF[col_name_time] = AllTravelTimes
+
+
+        # TODO: work with this self.warehouseInstance.BatchesDF['ItemCount'][i] indexing instead of making columns to list and iterating over them.
+
+
+
+
+    ### deprecated/unused:
     def getTravelRouteofBatch(self):#, Batch, OutputStation):
         '''
         calculates the route and travel time of each batch, based on the batch and the output station
@@ -289,6 +371,8 @@ class Demo():
         nx.is_connected(G) ## has to be true always
         #### TODO: delete until here
 
+
+
         ################################################################################################
         ##################################   TSP from NetworkX   #######################################
         ################################################################################################
@@ -316,21 +400,6 @@ class Demo():
         self.TravelRoute = chosenTravelRoute
         self.TravelRouteTime = TotalRouteTime
 
-
-    def getTravelTimeofBatch(self):#, TravelRoute, numberOfItems):
-        # calculates time based on the sequence of visited pods and the number of items picked up from there.
-        # TODO: make this function based on the output of the TSP problem
-        # is calculated in above function with networkx functionality
-        TravelRoute = ['OutD0', '12', '16', '17', '4', '9', '2', '7', '1', 'OutD0']
-
-        ## each item takes 3 seconds to pick, so we can just sum up the product of: number of items*time to pick
-        totalNumberofItemsPicked =  9    # BatchItemDF['quantity'].sum()
-
-
-
-        self.TravelTime = 1
-
-
     def getPackingTimeofBatch(self):#, #ofOrdersinBatch):
         # calculates time needed for packing a batch of orers at the OutputStation
         unloadCobot = 20        # per batch
@@ -355,10 +424,6 @@ class Demo():
         #    and satisfies other conditons
         #           not longer that 1.5x packing time of previous order
         #
-
-    #def chooseNextWaypoint(self):
-        # 1. if zoom is occupied, go to other zoom first.
-
 
     def assignOrdersToPackingStations(self):
         '''
@@ -389,7 +454,7 @@ class Demo():
 
 
 
-
+######################### start functions #########################
 	# warehouse instance
     def prepareData(self):
         print("[0] preparing all data with the standard format: ")
@@ -413,11 +478,50 @@ class Demo():
         d_ij = warehouse_data_processing.CalculateDistance()
         return d_ij
 
+######################### start functions #########################
+
+    # initlaize solution xml struncture as class object.
     def initSolution(self):
         print("[2] initializing solution class")
         solution = Solution()
         return solution
 
+    # generate ItemID - PodLocation dictionary.
+    def getPodforItems(self):
+        ''':key
+        method to collect the pod in which each item is located. can be adapoted for a mixed storage policy where items can be contained in multiple pods.
+        '''
+
+        item_id_pod_id_dict = {} #initialize dictionary for item pod location
+        for i in self.warehouseInstance.ItemDescriptions:
+            itemPodID = self.warehouseInstance.ItemDescriptions[i].ItemPodID
+            item_id_pod_id_dict[itemPodID] = []
+
+            for j in self.warehouseInstance.Pods:
+                for k in range(len(self.warehouseInstance.Pods[j].Items)):
+                    if self.warehouseInstance.Pods[j].Items[k].ID == itemPodID:
+                        item_id_pod_id_dict[itemPodID].append(j)
+
+
+        return item_id_pod_id_dict  # a dictionary with item IDs as keys and a list of pod locations as value.
+
+    # generated a Graph as an attribute of the warehouseInstance.
+    def generateGraph(self):
+        G = nx.Graph()
+        # adding all nodes and edges to the network graph
+        all_nodes = list(self.warehouseInstance.OutputStations) + list(self.warehouseInstance.Pods)
+        G.add_nodes_from(all_nodes)
+        G.add_edges_from(self.distance_ij)  ## weighted edged are taken in the format [[1,2,666],[2,3,5565],[],[],[]]
+        # setting the edges weights.
+        nx.set_edge_attributes(G, values=self.distance_ij, name='weight')
+
+        nx.draw(G, with_labels=True)
+        plt.savefig("network_img.png")
+
+        if nx.is_connected(G) == True: ## has to be true always
+            self.warehouseInstance.WarehouseGraph = G
+        else:
+            print('WarehouseGraph has unconnected nodes!')
 
 
 

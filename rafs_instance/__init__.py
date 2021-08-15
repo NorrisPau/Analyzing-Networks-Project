@@ -262,6 +262,7 @@ class Order:
         self.TimeStamp = timeStamp
         self.Positions = {}
         self.totalWeight = None
+        self.OrderID = None
 
     def AddPosition(self, pos):
         self.Positions[pos.ItemDescID] = pos
@@ -301,8 +302,7 @@ class OrderItemPosition:
 
 #Warehouse class, that holds all information about the warehouse
 
-
-######### FUNCTIONS
+####################### GLOBAL FUNCTIONS #######################
 def getFeasibleOrderCombinations(feasibleBatchesList, target, data, weight_table, cobotCapacity):
     for i in range(len(data)):
         new_target = copy.copy(target)
@@ -316,7 +316,7 @@ def getFeasibleOrderCombinations(feasibleBatchesList, target, data, weight_table
             new_target = new_target[:-1]
         getFeasibleOrderCombinations(feasibleBatchesList, new_target, new_data, weight_table, cobotCapacity)
     return feasibleBatchesList
-#######################
+####################### GLOBAL FUNCTIONS END #######################
 
 
 ## WAREHOUSE CLASS
@@ -359,11 +359,7 @@ class Warehouse:
 
         self.ItemPodLocations = self.getPodsforItems()
 
-        #self.openOrders.pop(-1)
-        #self.openOrders.pop(-1)
-        #self.openOrders.pop(-1)
-
-
+    ######################### start functions #########################
     #Import functions
     #Import layout functions
     def ImportLayout(self, file): 
@@ -509,7 +505,6 @@ class Warehouse:
             semaphores[semaphore.get('ID')] = semaphoreObj
         self.Semaphores = semaphores
         
-    # Import pod and pod infos
     def ImportPods(self, instanceFile, podInfoFile, podItemFile):
     
         #Import pods
@@ -576,8 +571,6 @@ class Warehouse:
                      
         self.Pods = pods
 
-    #  Import orders
-    #Function for importing orders and itemDescription
     def ImportOrders(self, file):
         
         
@@ -601,9 +594,10 @@ class Warehouse:
                                           itemDesc.get('Weight'),itemDesc.get('Letter'),itemDesc.get('Color'))
             itemDescriptions[itemDesc.get('ID')] = itemDescObj
             
-        
+        OrderID = 1
         #Loop over orders  
         for order in root.iter('Order'):
+
             #Create order object and append it to order list        
             orderObj = Order(order.get('TimeStamp')) 
             #Loop over positions in order
@@ -626,7 +620,9 @@ class Warehouse:
 
                 #Object for item position
             orderObj.getTotalWeight(totalWeightList)
+            orderObj.OrderID = OrderID
             allOrders.append(orderObj)
+            OrderID += 1
 
         for itemBun in root.iter('ItemBundle'):
             itemBunObj = ItemBundle(itemBun.get('TimeStamp'),itemBun.get('ItemDescriptionID'),itemBun.get('Size')) 
@@ -637,66 +633,10 @@ class Warehouse:
         self.Orders = allOrders
         self.ItemBundles = itemBundles
 
-    def getPodsforItems(self):
-        ''':key
-        method to collect the pod in which each item is located. can be adapoted for a mixed storage policy where items can be contained in multiple pods.
-        '''
+    ######################### start functions end #########################
 
-        item_id_pod_id_dict = {} #initialize dictionary for item pod location
-        for i in self.ItemDescriptions:
-            itemPodID = self.ItemDescriptions[i].ItemPodID
-            item_id_pod_id_dict[itemPodID] = []
-
-            for j in self.Pods:
-                for k in range(len(self.Pods[j].Items)):
-                    if self.Pods[j].Items[k].ID == itemPodID:
-                        item_id_pod_id_dict[itemPodID].append(j)
-
-
-        return item_id_pod_id_dict  # a dictionary with item IDs as keys and a list of pod locations as value.
-
-    def getItemsInBatch(self, batch, outputStationKey):
-        '''
-        calculates the route and travel time of each batch, based on the batch and the output station
-        :return: travel time and route
-        '''
-        #INPUTS:
-        Batch = [1,2]       ## draw this from function call
-
-        # get list of order of items in batch
-        # TODO: hier müssen wir die orders vom batch finden und die items in eine liste schreiben)
-        # get orderpositions from orderQueue inside of OutputStation
-        itemsInBatch = []
-        for i in Batch:     # the orders in batch
-            for j in self.OutputStations[outputStationKey].feasibleBatches:#Orders[i].Positions:
-                itemsInBatch.append(self.Orders[i].Positions[str(j)])
-
-
-
-        # accumulate items
-        ItemsDict = {}
-        for j in itemsInBatch:
-            ItemsDict[j.ItemDescID] = 0
-        for k in itemsInBatch:
-            ItemsDict[k.ItemDescID] = int(ItemsDict[k.ItemDescID]) + int(k.Count)
-
-        # get ItemPodID for ItemID
-        ItemPodID = {}
-        for i in ItemsDict:
-            ItemPodID[i] = self.ItemDescriptions[i].ItemPodID
-
-        # get the pod ID for each Item
-        PodID = {}
-        for i in ItemsDict:
-            PodID[i] = self.ItemPodLocations[ItemPodID[i]]
-
-        # collecting all information in dataframe
-        batchItemsDF = pd.DataFrame({'items':ItemsDict.keys(), 'quantity':ItemsDict.values(), 'ItemPodID':ItemPodID.values(), 'PodID': PodID.values()})
-
-
-
-    # getting a list of feasible batches of open orders in the warehouse
-    def getFeasibleBatchesWH(self): # returns: Dict{batchID, List[Orders]}:
+    # getting a list and dataframe of feasible batches of open orders in the warehouse
+    def getFeasibleBatches(self): # returns: Dict{batchID, List[Orders]}:
         '''
         function that gets all feasible batches for a respective Output Station, depending on the orders that were assigned to it.
         '''
@@ -717,8 +657,93 @@ class Warehouse:
         feasibleBatchesList = getFeasibleOrderCombinations(feasibleBatchesList, target, data, weight_table, cobotCapacity)
 
         self.feasibleBatches = feasibleBatchesList
-        self.feasibleBatchesDF = pd.DataFrame({0: feasibleBatchesList})
+        self.BatchesDF = pd.DataFrame({'Batch': feasibleBatchesList})
+        self.BatchesDF.set_index('Batch')
 
+    # generates a dictionary that contains a list of pod locations for each item.
+    def getPodsforItems(self):
+        ''':key
+        method to collect the pod in which each item is located. can be adapoted for a mixed storage policy where items can be contained in multiple pods.
+        '''
+
+        item_id_pod_id_dict = {} #initialize dictionary for item pod location
+        for i in self.ItemDescriptions:
+            itemPodID = self.ItemDescriptions[i].ItemPodID
+            item_id_pod_id_dict[itemPodID] = []
+
+            for j in self.Pods:
+                for k in range(len(self.Pods[j].Items)):
+                    if self.Pods[j].Items[k].ID == itemPodID:
+                        item_id_pod_id_dict[itemPodID].append(j)
+
+
+        return item_id_pod_id_dict  # a dictionary with item IDs as keys and a list of pod locations as value.
+
+    # adds fields to BatchesDF (Items, Pods, etc.)
+    def getItemPodsBatchDF(self):
+        '''
+        calculates the route and travel time of each batch, based on the batch and the output station
+        :return: travel time and route
+        '''
+        AllBatchesItems = []
+        AllBatchesItemsDict = []
+        AllBatchesItemPodID = []
+        AllBatchesPodID = []
+        AllStations = []
+        AllItemCounts = []
+
+        for k in self.feasibleBatches:
+            Batch = k
+            # get list of order of items in batch
+            # TODO: hier müssen wir die orders vom batch finden und die items in eine liste schreiben)
+            # get orderpositions from orderQueue inside of OutputStation
+            itemsInBatch = []
+            itemsInBatchList = []
+
+            for i in Batch:     # the orders in batch
+                for j in self.Orders[i].Positions:
+                    itemsInBatch.append(self.Orders[i].Positions[str(j)])
+                    itemsInBatchList.append(self.Orders[i].Positions[str(j)].ItemDescID)
+
+
+            # accumulate items
+            ItemsDict = {}
+            for j in itemsInBatch:
+                ItemsDict[j.ItemDescID] = 0
+            for k in itemsInBatch:
+                ItemsDict[k.ItemDescID] = int(ItemsDict[k.ItemDescID]) + int(k.Count)
+
+            AllBatchesItems.append(itemsInBatchList)
+            AllItemCounts.append(len(itemsInBatchList))
+            AllBatchesItemsDict.append(ItemsDict)
+
+            ItemPodID = {}
+            for i in ItemsDict:
+                ItemPodID[i] = self.ItemDescriptions[i].ItemPodID
+
+            # get the pod ID for each Item
+            PodID = {}
+            for i in ItemsDict:
+                PodID[i] = self.ItemPodLocations[ItemPodID[i]]
+
+            stationsToVisit = [item for elem in list(PodID.values()) for item in elem]
+
+
+            AllBatchesItemPodID.append(ItemPodID)
+            AllBatchesPodID.append(PodID)
+            AllStations.append(stationsToVisit)
+
+
+        # write itemsDict and ItemsinBatchList to BatchesDF
+        self.BatchesDF['ItemsinBatch'] = AllBatchesItems
+        self.BatchesDF['ItemsinBatchDict'] = AllBatchesItemsDict
+        self.BatchesDF['ItemCount'] = AllItemCounts
+        self.BatchesDF['ItemPodID'] = AllBatchesItemPodID
+        self.BatchesDF['PodIDs'] = AllBatchesPodID
+        self.BatchesDF['StationsToVisit'] = AllStations
+
+        # collecting all information in dataframe
+        #batchItemsDF = pd.DataFrame({'items':ItemsDict.keys(), 'quantity':ItemsDict.values(), 'ItemPodID':ItemPodID.values(), 'PodID': PodID.values()})
 
 
 
