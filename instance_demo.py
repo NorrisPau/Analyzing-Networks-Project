@@ -174,7 +174,7 @@ class Demo():
         #self.solution3 = self.initSolution()
 
 
-
+    # preparing the warehouse information
     def prepareWarehouseInformation(self):
         timer_start = time.time()
 
@@ -248,7 +248,7 @@ class Demo():
         return self.solution1
         '''
 
-
+    # calcukating shortest paths for batches with TSP
     def shortestPathTSP(self, OutputStation):
         # input: packing station
                # stationstovisit
@@ -293,8 +293,7 @@ class Demo():
         self.warehouseInstance.BatchesDF[col_name_time_per_order] = self.warehouseInstance.BatchesDF[col_name_time] / self.warehouseInstance.BatchesDF['OrderCount']
         # TODO: work with this self.warehouseInstance.BatchesDF['ItemCount'][i] indexing instead of making columns to list and iterating over them.
 
-
-
+    # using a greedy heuristic to find a solution to task 1
     def greedyHeuristicT1(self):
         # Assumption: there are only 2 packing station and 2 cobots. This is consistent with both 24 and 360 layouts
         # Keep track of time for each packer and cobot. Prep time is 30 seconds (only assigned at the beginning), so each time is
@@ -408,6 +407,153 @@ class Demo():
         self.BatchAssignCobot_List = BatchAssignCobot_List
         self.TimeCobot_List = TimeCobot_List
         self.TimePacker_List = TimePacker_List  #TODO: could this be used as a makespan time? max(TimeCobot_List, TimePacker_List)
+
+######################### start functions #########################
+	# warehouse instance
+    def prepareData(self):
+        print("[0] preparing all data with the standard format: ")
+        #Every instance
+        for key, instanceFile in instances.items():
+            podAmount = key[0]
+            depotAmount = key[1]
+            #For different orders
+            for key, orderFile in orders.items():
+                orderAmount = key
+                #For storage policies
+                for storagePolicy, storagePolicyFile in storagePolicies.items():
+                    warehouseInstance = instance.Warehouse(layoutFile, instanceFile, podInfoFile, storagePolicyFile, orderFile)
+        return warehouseInstance
+
+	# distance
+    def initData(self):
+        print("[1] changing data format for the algorithm we used here: ")
+        warehouse_data_processing = WarehouseDateProcessing(self.warehouseInstance)
+        #Distance d_ij between two nodes i,j \in V
+        d_ij = warehouse_data_processing.CalculateDistance()
+        return d_ij
+
+######################### start functions #########################
+
+    # initlaize solution xml struncture as class object.
+    def initSolution(self):
+        print("[2] initializing solution class")
+        solution = Solution()
+        return solution
+
+    # generate ItemID - PodLocation dictionary.
+    def getPodforItems(self):
+        ''':key
+        method to collect the pod in which each item is located. can be adapoted for a mixed storage policy where items can be contained in multiple pods.
+        '''
+        print("[3] Calculating pro Location for Items ")
+
+        item_id_pod_id_dict = {} #initialize dictionary for item pod location
+        for i in self.warehouseInstance.ItemDescriptions:
+            itemPodID = self.warehouseInstance.ItemDescriptions[i].ItemPodID
+            item_id_pod_id_dict[itemPodID] = []
+
+            for j in self.warehouseInstance.Pods:
+                for k in range(len(self.warehouseInstance.Pods[j].Items)):
+                    if self.warehouseInstance.Pods[j].Items[k].ID == itemPodID:
+                        item_id_pod_id_dict[itemPodID].append(j)
+
+
+        return item_id_pod_id_dict  # a dictionary with item IDs as keys and a list of pod locations as value.
+
+    # generated a Graph as an attribute of the warehouseInstance.
+    def generateGraph(self):
+        print("[6] Generating Network Graph for Warehouse Instance")
+
+        G = nx.Graph()
+        # adding all nodes and edges to the network graph
+        all_nodes = list(self.warehouseInstance.OutputStations) + list(self.warehouseInstance.Pods)
+        G.add_nodes_from(all_nodes)
+        G.add_edges_from(self.distance_ij)  ## weighted edged are taken in the format [[1,2,666],[2,3,5565],[],[],[]]
+        # setting the edges weights.
+        nx.set_edge_attributes(G, values=self.distance_ij, name='weight')
+
+        nx.draw(G, with_labels=True)
+        plt.savefig("network_img.png")
+
+        if nx.is_connected(G) == True: ## has to be true always
+            self.warehouseInstance.WarehouseGraph = G
+        else:
+            print('WarehouseGraph has unconnected nodes!')
+
+
+    def writeToXML(self):
+        # base element
+        root = ET.Element("root")
+        # first section "split" contains information about which orders are in which batches, and which batches are assigned to which station (=bot)
+        collecting = ET.SubElement(root, "Collecting")
+        split = ET.SubElement(collecting, 'Split')
+        packingStationNames = result.keys()
+        # write each station as a sub-node of split
+        for station in packingStationNames:
+            Bot_ID = ET.SubElement(split, "Bot")
+            Bot_ID.set("ID", station)
+            # filter the solution so it only contains batches for the right station
+            stationSolution = result[station]
+            # write each batch as a sub-node of Bot_ID
+            batchID = 1
+            for batch in stationSolution:
+                Batch_ID = ET.SubElement(Bot_ID, "Batch")
+                Batch_ID.set("ID", str(batchID))
+                batchID += 1
+                # write Orders as the sub-node of Batch_ID
+                Orders = ET.SubElement(Batch_ID, "Orders")
+                # write each order as sub-node of Batch_ID
+                for order in batch["ordersInBatch"]:
+                    Order = ET.SubElement(Orders, "Order")
+                    Order.text = str(order)
+
+        # first section "bots" contains detailed information about each bot (station)
+        bots = ET.SubElement(collecting, "Bots")
+        # write each station as a sub-node of bots
+        for station in packingStationNames:
+            Bot_ID = ET.SubElement(bots, "Bot")
+            Bot_ID.set("ID", station)
+            stationSolution = result[station]
+            # batches are written in sub-node Batches of Bot_ID
+            Batches = ET.SubElement(Bot_ID, "Batches")
+            # write each batch as a sub-node of Bot_ID
+            batchID = 1
+            for batch in stationSolution:
+                Batch_ID = ET.SubElement(Batches, "Batch")
+                Batch_ID.set("BatchNumber", str(batchID))
+                Batch_ID.set("Distance", str(batch["distance"]))
+                Batch_ID.set("Weight", str(batch["weight"]))
+                batchID += 1
+                # for each batch, write two sub-nodes: itemsData, edges
+                # first write ItemsData
+                ItemsData = ET.SubElement(Batch_ID, "ItemsData")
+                # ItemsData has a sub-node called Orders
+                Orders = ET.SubElement(ItemsData, "Orders")
+                # write each order as sub-node of Orders:
+                for order in batch["ordersInBatch"]:
+                    Order = ET.SubElement(Orders, "Order")
+                    Order.set("ID", str(order))
+
+                    # write each item in the order as sub-node of Order
+                    itemList = F_itemsInOrder(int(order))
+                    for item in itemList:
+                        Item = ET.SubElement(Order, "Item")
+                        # for each item, conclude information about the itemID and the description
+                        Item.set("ID", str(item))
+                        Item.set("Type", itemInfoList.loc[item, "Description"])
+
+                # write Edges as sub-node of Batch_ID
+                Edges = ET.SubElement(Batch_ID, "Edges")
+                # write every edge of the batch
+                edgeIndex = list(range(0, len(batch["routeInBatch"]) - 1))
+                for edge in edgeIndex:
+                    Edge = ET.SubElement(Edges, "Edge")
+                    Edge.set("StartNode", str(batch["routeInBatch"][edge]))
+                    Edge.set("EndNode", str(batch["routeInBatch"][edge + 1]))
+
+        tree = ET.ElementTree(root)
+        tree.write(filename)
+
 
 
 
@@ -553,83 +699,6 @@ class Demo():
                 # assign order to that station
                 self.warehouseInstance.OutputStations[LowestWeightOutputStationKey].Queues.append(self.warehouseInstance.openOrders[i])
                 self.warehouseInstance.OutputStations[LowestWeightOutputStationKey].UpdateWeight()
-
-
-
-
-
-######################### start functions #########################
-	# warehouse instance
-    def prepareData(self):
-        print("[0] preparing all data with the standard format: ")
-        #Every instance
-        for key, instanceFile in instances.items():
-            podAmount = key[0]
-            depotAmount = key[1]
-            #For different orders
-            for key, orderFile in orders.items():
-                orderAmount = key
-                #For storage policies
-                for storagePolicy, storagePolicyFile in storagePolicies.items():
-                    warehouseInstance = instance.Warehouse(layoutFile, instanceFile, podInfoFile, storagePolicyFile, orderFile)
-        return warehouseInstance
-
-	# distance
-    def initData(self):
-        print("[1] changing data format for the algorithm we used here: ")
-        warehouse_data_processing = WarehouseDateProcessing(self.warehouseInstance)
-        #Distance d_ij between two nodes i,j \in V
-        d_ij = warehouse_data_processing.CalculateDistance()
-        return d_ij
-
-######################### start functions #########################
-
-    # initlaize solution xml struncture as class object.
-    def initSolution(self):
-        print("[2] initializing solution class")
-        solution = Solution()
-        return solution
-
-    # generate ItemID - PodLocation dictionary.
-    def getPodforItems(self):
-        ''':key
-        method to collect the pod in which each item is located. can be adapoted for a mixed storage policy where items can be contained in multiple pods.
-        '''
-        print("[3] Calculating pro Location for Items ")
-
-        item_id_pod_id_dict = {} #initialize dictionary for item pod location
-        for i in self.warehouseInstance.ItemDescriptions:
-            itemPodID = self.warehouseInstance.ItemDescriptions[i].ItemPodID
-            item_id_pod_id_dict[itemPodID] = []
-
-            for j in self.warehouseInstance.Pods:
-                for k in range(len(self.warehouseInstance.Pods[j].Items)):
-                    if self.warehouseInstance.Pods[j].Items[k].ID == itemPodID:
-                        item_id_pod_id_dict[itemPodID].append(j)
-
-
-        return item_id_pod_id_dict  # a dictionary with item IDs as keys and a list of pod locations as value.
-
-    # generated a Graph as an attribute of the warehouseInstance.
-    def generateGraph(self):
-        print("[6] Generating Network Graph for Warehouse Instance")
-
-        G = nx.Graph()
-        # adding all nodes and edges to the network graph
-        all_nodes = list(self.warehouseInstance.OutputStations) + list(self.warehouseInstance.Pods)
-        G.add_nodes_from(all_nodes)
-        G.add_edges_from(self.distance_ij)  ## weighted edged are taken in the format [[1,2,666],[2,3,5565],[],[],[]]
-        # setting the edges weights.
-        nx.set_edge_attributes(G, values=self.distance_ij, name='weight')
-
-        nx.draw(G, with_labels=True)
-        plt.savefig("network_img.png")
-
-        if nx.is_connected(G) == True: ## has to be true always
-            self.warehouseInstance.WarehouseGraph = G
-        else:
-            print('WarehouseGraph has unconnected nodes!')
-
 
 
 

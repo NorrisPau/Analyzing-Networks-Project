@@ -833,6 +833,11 @@ def writeSolutionXML_SAA(result, itemInfoList, filename):
     tree.write(filename)
 
 
+
+
+
+
+
 # Task 1 - Greedy Heurisitc
 
 # Full information on items and their location in the pods
