@@ -19,10 +19,10 @@ from xml.dom import minidom
 import rafs_instance as instance
 
 layoutFile = r'data/layout/1-1-1-2-1.xlayo'
-podInfoFile = 'data/sku24/pods_infos.txt'
+podInfoFile = 'data/sku360/pods_infos.txt'
 
 instances = {}
-instances[24,2] = r'data/sku24/layout_sku_24_2.xml'
+instances[360,2] = r'data/sku360/layout_sku_360_2.xml'
 
 storagePolicies = {}
 storagePolicies['dedicated'] = 'data/sku24/pods_items_dedicated_1.txt'
@@ -172,3 +172,10 @@ class Demo():
 if __name__ == "__main__":
     _demo = Demo()	
     print("todo:")
+
+
+values = list(_demo.warehouseInstance.Orders[0].Positions.values())
+
+for i in range(len(_demo.warehouseInstance.Orders)):
+    print(len(_demo.warehouseInstance.Orders[i].Positions))
+

@@ -407,8 +407,49 @@ class Demo():
         self.BatchAssignCobot_List = BatchAssignCobot_List
         self.TimeCobot_List = TimeCobot_List
         self.TimePacker_List = TimePacker_List  #TODO: could this be used as a makespan time? max(TimeCobot_List, TimePacker_List)
+        ### Yes the makespan is the time at which both packers are done packing the last orders, so
+        # makespan = max(TimePacker_List)
 
-######################### start functions #########################
+
+
+    def calculateMakeSpan(self, batch_assignments):
+
+        OrdersTable = self.warehouseInstance.BatchesDF[
+            ['Batch', 'travelTime_OutD0', 'travelTime_OutD1']]
+        # The cobot/packer times will be calculated seperately for each cobot. The outer loop cyles through each cobot
+        # the inner loop cycles through assigned batches
+        TimePacker_List = []
+        for cobot in range(len(batch_assignments)):
+            i = 0
+            for batch in batch_assignments[cobot]:
+                i += 1
+                # Get the time it takes to complete the next batch
+                #print(OrdersTable)
+                batchTime = int(OrdersTable.iloc[:,cobot+1][OrdersTable.Batch.apply(lambda x: x == batch)])
+                # for the first iteration (batch) of each cobot, we need to reinitialize the times
+                if i == 1:
+                    TimeCobot = 30
+                    TimePacker = 30
+                    TimeCobot += batchTime + 20
+                    TimePacker += batchTime + 20 + 60 * len(batch)
+                # all other iterations go through here. We add time in a similar manner to the greedy algorithm
+                else:
+                    TimeCobot += batchTime
+                    # cobot and packer must wait until both are read
+                    TimeCobot = max(TimeCobot,TimePacker)
+                    TimePacker = max(TimeCobot,TimePacker)
+
+                    # Now that both are ready, add time to unpack
+                    TimeCobot += 20
+
+                    # The packer also adds the unload time, and also packing time for each item
+                    TimePacker += 20 + 60 * len(batch)
+            TimePacker_List.append(TimePacker)
+
+        makespan = max(TimePacker_List)
+        return makespan
+
+    ######################### start functions #########################
 	# warehouse instance
     def prepareData(self):
         print("[0] preparing all data with the standard format: ")
@@ -480,7 +521,7 @@ class Demo():
         else:
             print('WarehouseGraph has unconnected nodes!')
 
-
+    """
     def writeToXML(self):
         # base element
         root = ET.Element("root")
@@ -553,7 +594,7 @@ class Demo():
 
         tree = ET.ElementTree(root)
         tree.write(filename)
-
+        """
 
 
 
@@ -713,6 +754,7 @@ if __name__ == "__main__":
 
     # applying greedy heuristic to find solution for task 1
     _demo.greedyHeuristicT1()
+    _demo.calculateMakeSpan([[[2], [3, 7], [1], [9]], [[0], [4, 6], [5], [8]]])
     print(1)
     #solution1.savetoxml(path)
 
