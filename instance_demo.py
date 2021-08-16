@@ -491,28 +491,28 @@ class Demo():
         # write each station as a sub-node of split
         for station in packingStationNames:
             Bot_ID = ET.SubElement(split, "Bot")
-            Bot_ID.set("ID", station)
+            Bot_ID.set("ID", station # TODO: find this information in our class strcuture
             # filter the solution so it only contains batches for the right station
             stationSolution = result[station]
             # write each batch as a sub-node of Bot_ID
             batchID = 1
             for batch in stationSolution:
                 Batch_ID = ET.SubElement(Bot_ID, "Batch")
-                Batch_ID.set("ID", str(batchID))
+                Batch_ID.set("ID", str(batchID)) # TODO: find this information in our class strcuture
                 batchID += 1
                 # write Orders as the sub-node of Batch_ID
                 Orders = ET.SubElement(Batch_ID, "Orders")
                 # write each order as sub-node of Batch_ID
                 for order in batch["ordersInBatch"]:
                     Order = ET.SubElement(Orders, "Order")
-                    Order.text = str(order)
+                    Order.text = str(order) # TODO: find this information in our class strcuture
 
         # first section "bots" contains detailed information about each bot (station)
         bots = ET.SubElement(collecting, "Bots")
         # write each station as a sub-node of bots
         for station in packingStationNames:
             Bot_ID = ET.SubElement(bots, "Bot")
-            Bot_ID.set("ID", station)
+            Bot_ID.set("ID", station) # TODO: find this information in our class strcuture
             stationSolution = result[station]
             # batches are written in sub-node Batches of Bot_ID
             Batches = ET.SubElement(Bot_ID, "Batches")
@@ -520,9 +520,9 @@ class Demo():
             batchID = 1
             for batch in stationSolution:
                 Batch_ID = ET.SubElement(Batches, "Batch")
-                Batch_ID.set("BatchNumber", str(batchID))
-                Batch_ID.set("Distance", str(batch["distance"]))
-                Batch_ID.set("Weight", str(batch["weight"]))
+                Batch_ID.set("BatchNumber", str(batchID)) # TODO: find this information in our class strcuture
+                Batch_ID.set("Distance", str(batch["distance"])) # TODO: find this information in our class strcuture
+                Batch_ID.set("Weight", str(batch["weight"])) # TODO: find this information in our class strcuture
                 batchID += 1
                 # for each batch, write two sub-nodes: itemsData, edges
                 # first write ItemsData
@@ -532,7 +532,7 @@ class Demo():
                 # write each order as sub-node of Orders:
                 for order in batch["ordersInBatch"]:
                     Order = ET.SubElement(Orders, "Order")
-                    Order.set("ID", str(order))
+                    Order.set("ID", str(order)) # TODO: find this information in our class strcuture
 
                     # write each item in the order as sub-node of Order
                     itemList = F_itemsInOrder(int(order))
