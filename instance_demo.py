@@ -554,7 +554,36 @@ class Demo():
             filename = 'Solutions/Task_2/'  + warehouse + '_' + str(makespan_s) + '_solution_taks2_simmulated_annealing_neighborhood.xml'
 
             _demo.writeToXML(filename, s)
+        return makespan_s_optimal
 
+    def perturbSA(self, iterations):
+        overall_optimal = 10000000
+        while iterations > 0:
+            # Create initial solution
+            OrdersTable = self.warehouseInstance.BatchesDF[['Batch']]
+            BatchAssignCobot_List = [[],[]]
+            # randomly select a cobot
+            current_cobot = int(np.random.randint(0, 2, 1))
+
+            while len(OrdersTable.Batch) > 0:
+                # randomly select a batch to add
+                add_batch_index = int(np.random.randint(0, len(OrdersTable.Batch), 1))
+                add_batch = list(OrdersTable.Batch.iloc[add_batch_index])
+                # Assign that batch to the cobot
+                BatchAssignCobot_List[current_cobot].append(add_batch)
+                # drop batch from orders
+                dropping_rows = OrdersTable.Batch.apply(lambda x: any(item in add_batch for item in x))
+                OrdersTable = OrdersTable[dropping_rows == False]
+
+                # switch cobot
+                current_cobot = int(bool(current_cobot) == False)
+
+            # Feed this starting solution into SA algorithm
+            makespan_s_optimal = self.saNeighborhood_T2(BatchAssignCobot_List)
+            if makespan_s_optimal < overall_optimal:
+                overall_optimal = copy.deepcopy(makespan_s_optimal)
+            #print("overall_optimal", overall_optimal)
+            iterations -= 1
 
 
     def greedyHeuristic_MixedPolicy_T3(self):
@@ -880,6 +909,8 @@ if __name__ == "__main__":
 
         # Task 2.1 Simmunaletd Annealing
         _demo.saNeighborhood_T2(_demo.BatchAssignCobot_List, T=100, alpha=0.8)
+        _demo.perturbSA(3)
+
 
 
     elif storagePolicies.get('mixed'):
