@@ -263,6 +263,7 @@ class Demo():
 
         AllChosenRoutes = []
         AllTravelTimes = []
+        AllTravelDistances = []
         AllBatchesStations = list(self.warehouseInstance.BatchesDF['StationsToVisit'])
 
         SA_tsp = approximation.traveling_salesman.simulated_annealing_tsp
@@ -278,21 +279,25 @@ class Demo():
             ######################################################################
             chosenTravelRoute = tsp(self.warehouseInstance.WarehouseGraph, nodes=stationsToVisit, method=tsp_method)
 
-            TravelTime = nx.classes.function.path_weight(self.warehouseInstance.WarehouseGraph, chosenTravelRoute, 'weight') / BotVelocity
+            TravelDistance = nx.classes.function.path_weight(self.warehouseInstance.WarehouseGraph, chosenTravelRoute, 'weight')
+            TravelTime =  TravelDistance / BotVelocity
             PickingTime = TravelTime + self.warehouseInstance.BatchesDF['ItemCount'][i] * ItemPickingTime
 
             TotalRouteTime = TravelTime + PickingTime
             ######################################################################
             AllChosenRoutes.append(chosenTravelRoute)
             AllTravelTimes.append(TotalRouteTime)
+            AllTravelDistances.append(TravelDistance)
             i += 1
 
         # output: shortest path TSP
         col_name_route = 'shortestRoute_' + OutputStation
         col_name_time = 'travelTime_' + OutputStation
+        col_name_dist = 'travelDist_' + OutputStation
         col_name_time_per_order = 'travelTimeperOrder_' + OutputStation
         self.warehouseInstance.BatchesDF[col_name_route] = AllChosenRoutes
         self.warehouseInstance.BatchesDF[col_name_time] = AllTravelTimes
+        self.warehouseInstance.BatchesDF[col_name_dist] = AllTravelDistances
         self.warehouseInstance.BatchesDF[col_name_time_per_order] = self.warehouseInstance.BatchesDF[col_name_time] / self.warehouseInstance.BatchesDF['OrderCount']
         # TODO: work with this self.warehouseInstance.BatchesDF['ItemCount'][i] indexing instead of making columns to list and iterating over them.
 
@@ -322,7 +327,6 @@ class Demo():
 
         # Initialize table of feasible orders
         OrdersTable = self.warehouseInstance.BatchesDF[['Batch', 'travelTime_OutD0', 'travelTime_OutD1', 'travelTimeperOrder_OutD0', 'travelTimeperOrder_OutD1']]
-
 
         ##### I could write this in a loop. If there's time
         # First batch assignment
@@ -590,85 +594,135 @@ class Demo():
         else:
             print('WarehouseGraph has unconnected nodes!')
 
-    """
+
     def writeToXML(self):
         # base element
         root = ET.Element("root")
         # first section "split" contains information about which orders are in which batches, and which batches are assigned to which station (=bot)
         collecting = ET.SubElement(root, "Collecting")
-        split = ET.SubElement(collecting, 'Split')
-        packingStationNames = result.keys()
-        # write each station as a sub-node of split
-        for station in packingStationNames:
-            Bot_ID = ET.SubElement(split, "Bot")
-            Bot_ID.set("ID", station # TODO: find this information in our class strcuture
-            # filter the solution so it only contains batches for the right station
-            stationSolution = result[station]
-            # write each batch as a sub-node of Bot_ID
-            batchID = 1
-            for batch in stationSolution:
-                Batch_ID = ET.SubElement(Bot_ID, "Batch")
-                Batch_ID.set("ID", str(batchID)) # TODO: find this information in our class strcuture
-                batchID += 1
-                # write Orders as the sub-node of Batch_ID
-                Orders = ET.SubElement(Batch_ID, "Orders")
-                # write each order as sub-node of Batch_ID
-                for order in batch["ordersInBatch"]:
-                    Order = ET.SubElement(Orders, "Order")
-                    Order.text = str(order) # TODO: find this information in our class strcuture
+        split = ET.SubElement(collecting, "Split")
 
-        # first section "bots" contains detailed information about each bot (station)
+        #adding first main section of xml file (Split)
+        for bot in self.warehouseInstance.Bots:
+            bot_id = ET.SubElement(split, "Bot")
+            bot_id.set("ID", str(bot))   # adding cobot ID to the XML structure
+
+            for batch in self.BatchAssignCobot_List[int(bot)]:
+                batch_id = ET.SubElement(bot_id, "Batch")
+                batch_id.set("ID", str(self.BatchAssignCobot_List[int(bot)].index(batch)+1))  # adding batch ID to the XML structure
+                orders = ET.SubElement(batch_id, "Orders")
+
+                for order in self.BatchAssignCobot_List[int(bot)][self.BatchAssignCobot_List[int(bot)].index(batch)]:
+                    order_elem = ET.SubElement(orders, "Order")         #adding orders to the batches
+                    order_elem.text = 'OC' + str(order)
+
+
+        #adding second main section of xml file (Bots)
         bots = ET.SubElement(collecting, "Bots")
-        # write each station as a sub-node of bots
-        for station in packingStationNames:
-            Bot_ID = ET.SubElement(bots, "Bot")
-            Bot_ID.set("ID", station) # TODO: find this information in our class strcuture
-            stationSolution = result[station]
-            # batches are written in sub-node Batches of Bot_ID
-            Batches = ET.SubElement(Bot_ID, "Batches")
-            # write each batch as a sub-node of Bot_ID
-            batchID = 1
-            for batch in stationSolution:
-                Batch_ID = ET.SubElement(Batches, "Batch")
-                Batch_ID.set("BatchNumber", str(batchID)) # TODO: find this information in our class strcuture
-                Batch_ID.set("Distance", str(batch["distance"])) # TODO: find this information in our class strcuture
-                Batch_ID.set("Weight", str(batch["weight"])) # TODO: find this information in our class strcuture
-                batchID += 1
-                # for each batch, write two sub-nodes: itemsData, edges
-                # first write ItemsData
-                ItemsData = ET.SubElement(Batch_ID, "ItemsData")
-                # ItemsData has a sub-node called Orders
-                Orders = ET.SubElement(ItemsData, "Orders")
-                # write each order as sub-node of Orders:
-                for order in batch["ordersInBatch"]:
-                    Order = ET.SubElement(Orders, "Order")
-                    Order.set("ID", str(order)) # TODO: find this information in our class strcuture
 
-                    # write each item in the order as sub-node of Order
-                    itemList = F_itemsInOrder(int(order))
-                    for item in itemList:
-                        Item = ET.SubElement(Order, "Item")
-                        # for each item, conclude information about the itemID and the description
-                        Item.set("ID", str(item))
-                        Item.set("Type", itemInfoList.loc[item, "Description"])
+        for bot in self.warehouseInstance.Bots:
+            bot_id = ET.SubElement(bots, "Bot")
+            bot_id.set("ID", str(bot))
+            bot_id.set("collect", "1")
+            bot_id.set("refill", "-1")
+            batch_id = ET.SubElement(bot_id, "Batches")
 
-                # write Edges as sub-node of Batch_ID
-                Edges = ET.SubElement(Batch_ID, "Edges")
-                # write every edge of the batch
-                edgeIndex = list(range(0, len(batch["routeInBatch"]) - 1))
-                for edge in edgeIndex:
-                    Edge = ET.SubElement(Edges, "Edge")
-                    Edge.set("StartNode", str(batch["routeInBatch"][edge]))
-                    Edge.set("EndNode", str(batch["routeInBatch"][edge + 1]))
+            for batch in self.BatchAssignCobot_List[int(bot)]:
 
+                df_col_travelDist = 'travelDist_OutD' + bot
+                batches = ET.SubElement(batch_id, "Batch")
+                batches.set("BatchNumber", str(self.BatchAssignCobot_List[int(bot)].index(batch)+1))
+                batches.set("Distance", str(self.warehouseInstance.BatchesDF.loc[self.warehouseInstance.BatchesDF['Batch'].astype(str) == str(batch)][df_col_travelDist].values[0]))
+
+                items_data = ET.SubElement(batches, "ItemsData")
+
+                orders = ET.SubElement(items_data, "Orders")
+                # adding all orders to the xml file
+                for order in self.warehouseInstance.Orders:
+                    order_elem = ET.SubElement(orders, "Order")  # adding orders to the batches
+                    order_elem.set("ID", 'OC' + str(order.OrderID))
+                    if order.OrderID in self.BatchAssignCobot_List[int(bot)][self.BatchAssignCobot_List[int(bot)].index(batch)]:
+                        #loop over all items in order
+                        for item in self.warehouseInstance.Orders[order.OrderID].Positions:
+                            for position in range(len(self.warehouseInstance.Orders[order.OrderID].Positions[item].Count)):
+                                item_elem = ET.SubElement(order_elem, "Item")  # adding orders to the batches
+                                item_elem.set("ID", 'C' + str(item) + '_' + str(position)) ## TODO: wont work for mixed storage policy
+                                item_elem.set("Pod", self.warehouseInstance.ItemPodLocations[self.warehouseInstance.ItemDescriptions[item].ItemPodID][0]) ## TODO: for mixed storage policy, this has to be adapted
+                                item_elem.set("Type", self.warehouseInstance.ItemDescriptions[item].ItemPodID) ##
+
+
+                edges = ET.SubElement(batches, "Edges")
+                df_col_path = 'shortestRoute_OutD' + bot
+                edges_list = self.warehouseInstance.BatchesDF.loc[self.warehouseInstance.BatchesDF['Batch'].astype(str) == str(batch)][df_col_path].values[0]
+                for i in range(len(edges_list)-1):
+                    edge_elem = ET.SubElement(edges, "Edge")  # adding orders to the batches
+                    edge_elem.set("StartNode", edges_list[i])
+                    edge_elem.set("EndNode", edges_list[i+1])
+
+
+
+                waypoints = ET.SubElement(batches, "Waypoints")
+
+
+
+        # write structure to xml file
         tree = ET.ElementTree(root)
-        tree.write(filename)
-        """
+        instance.indentXMLTree(root)
+        tree.write(filename, encoding="utf-8", xml_declaration=True)
 
+
+        # # first section "bots" contains detailed information about each bot (station)
+        # bots = ET.SubElement(collecting, "Bots")
+        # # write each station as a sub-node of bots
+        # for station in packingStationNames:
+        #     Bot_ID = ET.SubElement(bots, "Bot")
+        #     Bot_ID.set("ID", station) # TODO: find this information in our class strcuture
+        #     stationSolution = result[station]
+        #     # batches are written in sub-node Batches of Bot_ID
+        #     Batches = ET.SubElement(Bot_ID, "Batches")
+        #     # write each batch as a sub-node of Bot_ID
+        #     batchID = 1
+        #     for batch in stationSolution:
+        #         Batch_ID = ET.SubElement(Batches, "Batch")
+        #         Batch_ID.set("BatchNumber", str(batchID)) # TODO: find this information in our class strcuture
+        #         Batch_ID.set("Distance", str(batch["distance"])) # TODO: find this information in our class strcuture
+        #         Batch_ID.set("Weight", str(batch["weight"])) # TODO: find this information in our class strcuture
+        #         batchID += 1
+        #         # for each batch, write two sub-nodes: itemsData, edges
+        #         # first write ItemsData
+        #         ItemsData = ET.SubElement(Batch_ID, "ItemsData")
+        #         # ItemsData has a sub-node called Orders
+        #         Orders = ET.SubElement(ItemsData, "Orders")
+        #         # write each order as sub-node of Orders:
+        #         for order in batch["ordersInBatch"]:
+        #             Order = ET.SubElement(Orders, "Order")
+        #             Order.set("ID", str(order)) # TODO: find this information in our class strcuture
+        #
+        #             # write each item in the order as sub-node of Order
+        #             itemList = F_itemsInOrder(int(order))
+        #             for item in itemList:
+        #                 Item = ET.SubElement(Order, "Item")
+        #                 # for each item, conclude information about the itemID and the description
+        #                 Item.set("ID", str(item))
+        #                 Item.set("Type", itemInfoList.loc[item, "Description"])
+        #
+        #         # write Edges as sub-node of Batch_ID
+        #         Edges = ET.SubElement(Batch_ID, "Edges")
+        #         # write every edge of the batch
+        #         edgeIndex = list(range(0, len(batch["routeInBatch"]) - 1))
+        #         for edge in edgeIndex:
+        #             Edge = ET.SubElement(Edges, "Edge")
+        #             Edge.set("StartNode", str(batch["routeInBatch"][edge]))
+        #             Edge.set("EndNode", str(batch["routeInBatch"][edge + 1]))
+        #
+        # tree = ET.ElementTree(root)
+        # tree.write(filename)
 
 
 
     # deprecated/unused:
+
+
     def getTravelRouteofBatch(self):#, Batch, OutputStation):
         '''
         calculates the route and travel time of each batch, based on the batch and the output station
@@ -776,6 +830,7 @@ class Demo():
 
         self.TravelRoute = chosenTravelRoute
         self.TravelRouteTime = TotalRouteTime
+
     def getPackingTimeofBatch(self):#, #ofOrdersinBatch):
         # calculates time needed for packing a batch of orers at the OutputStation
         unloadCobot = 20        # per batch
@@ -822,6 +877,14 @@ if __name__ == "__main__":
     _demo.prepareWarehouseInformation()
 
     # applying greedy heuristic to find solution for task 1
+    _demo.greedyHeuristicT1()
+
+    _demo.writeToXML('solution_taks1_greedy_heuristic.xml')
+
+
+    #_demo.SimulatedAnnealing())
+
+    #_demo.writeToXML()
     #_demo.greedyHeuristicT1()
     #_demo.calculateMakeSpan([[[2], [3, 7], [1], [9]], [[0], [4, 6], [5], [8]]])
     _demo.saNeighborhood([[[2], [3, 7], [1], [9]], [[0], [4, 6], [5], [8]]])

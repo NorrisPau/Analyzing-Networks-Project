@@ -303,6 +303,7 @@ class OrderItemPosition:
 #Warehouse class, that holds all information about the warehouse
 
 ####################### GLOBAL FUNCTIONS #######################
+#recursively call all possible combinations of orders to batches without permutations
 def getFeasibleOrderCombinations(feasibleBatchesList, target, data, weight_table, cobotCapacity):
     for i in range(len(data)):
         new_target = copy.copy(target)
@@ -316,6 +317,22 @@ def getFeasibleOrderCombinations(feasibleBatchesList, target, data, weight_table
             new_target = new_target[:-1]
         getFeasibleOrderCombinations(feasibleBatchesList, new_target, new_data, weight_table, cobotCapacity)
     return feasibleBatchesList
+
+# recursively indent xml tree
+def indentXMLTree(elem, level=0):
+    i = "\n" + level*"  "
+    if len(elem):
+        if not elem.text or not elem.text.strip():
+            elem.text = i + "  "
+        if not elem.tail or not elem.tail.strip():
+            elem.tail = i
+        for elem in elem:
+            indentXMLTree(elem, level+1)
+        if not elem.tail or not elem.tail.strip():
+            elem.tail = i
+    else:
+        if level and (not elem.tail or not elem.tail.strip()):
+            elem.tail = i
 ####################### GLOBAL FUNCTIONS END #######################
 
 
