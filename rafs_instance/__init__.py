@@ -3,6 +3,8 @@ import numpy as np
 import copy
 import pandas as pd
 
+
+
 class PodLayout:
     def __init__(self, tierCount= None, tierHeight= None, humanCount= None, humanRad= None, humanMaxAcc= None, humanMaxDec= None,
                  humanMaxVel= None, humanTurnSpeed= None, boxCap= None, botCount= None, botRad= None, maxAcc= None, maxDec= None,
@@ -302,7 +304,9 @@ class OrderItemPosition:
 
 #Warehouse class, that holds all information about the warehouse
 
+
 ####################### GLOBAL FUNCTIONS #######################
+
 #recursively call all possible combinations of orders to batches without permutations
 def getFeasibleOrderCombinations(feasibleBatchesList, target, data, weight_table, cobotCapacity):
     for i in range(len(data)):
@@ -319,21 +323,23 @@ def getFeasibleOrderCombinations(feasibleBatchesList, target, data, weight_table
     return feasibleBatchesList
 
 # recursively indent xml tree
-def indentXMLTree(elem, level=0):
+def indentXMLTree(e, level=0):
     i = "\n" + level*"  "
-    if len(elem):
-        if not elem.text or not elem.text.strip():
-            elem.text = i + "  "
-        if not elem.tail or not elem.tail.strip():
-            elem.tail = i
-        for elem in elem:
-            indentXMLTree(elem, level+1)
-        if not elem.tail or not elem.tail.strip():
-            elem.tail = i
+    if len(e):
+        if not e.text or not e.text.strip():
+            e.text = i + "  "
+        if not e.tail or not e.tail.strip():
+            e.tail = i
+        for e in e:
+            indentXMLTree(e, level+1)
+        if not e.tail or not e.tail.strip():
+            e.tail = i
     else:
-        if level and (not elem.tail or not elem.tail.strip()):
-            elem.tail = i
+        if level and (not e.tail or not e.tail.strip()):
+            e.tail = i
+
 ####################### GLOBAL FUNCTIONS END #######################
+
 
 
 ## WAREHOUSE CLASS
@@ -376,6 +382,7 @@ class Warehouse:
         self.assignedOrders = []
 
         self.ItemPodLocations = self.getPodsforItems()
+
 
     ######################### start functions #########################
     #Import functions
@@ -680,6 +687,10 @@ class Warehouse:
         self.BatchesDF['BatchID'] = np.arange(len(self.BatchesDF))
         self.BatchesDF.set_index('Batch')
 
+        print(f"[4_1] Number of feasible Batches: {len(feasibleBatchesList)}")
+
+
+
     # generates a dictionary that contains a list of pod locations for each item.
     def getPodsforItems(self):
         ''':key
@@ -707,6 +718,8 @@ class Warehouse:
         :return: travel time and route
         '''
         print("[3] Calculating Item List and Pod Locations for Batches")
+
+        storagePolicy = 'mixed'
 
         AllBatchesItems = []
         AllBatchesItemsDict = []
@@ -747,10 +760,14 @@ class Warehouse:
 
             # get the pod ID for each Item
             PodID = {}
-            for i in ItemsDict:
-                PodID[i] = self.ItemPodLocations[ItemPodID[i]]
+            if storagePolicy == 'dedicated':
+                for i in ItemsDict:
+                    PodID[i] = self.ItemPodLocations[ItemPodID[i]]  # TODO: implement heuristic to choose suitable pod in mixed policy case
+                stationsToVisit = [item for elem in list(PodID.values()) for item in elem]
+            elif storagePolicy == 'mixed':
+                stationsToVisit = self.choosePodLocation(ItemPodID)
 
-            stationsToVisit = [item for elem in list(PodID.values()) for item in elem]
+
 
             AllOrderCounts.append(len(Batch))
             AllBatchesItemPodID.append(ItemPodID)
@@ -770,7 +787,34 @@ class Warehouse:
         # collecting all information in dataframe
         #batchItemsDF = pd.DataFrame({'items':ItemsDict.keys(), 'quantity':ItemsDict.values(), 'ItemPodID':ItemPodID.values(), 'PodID': PodID.values()})
 
+    def choosePodLocation(self, ItemPodID):
 
+        chosenPath = []
+        # choose one of the packing stations randomly
+        output_station = 'OutD' + str(int(np.random.randint(0, 2, 1)))
+        # use it as the first node in the path
+        chosenPath.append(output_station)
+
+
+        for item in ItemPodID.values():
+            #get all possible locations for the Item.
+            PodLocations = self.ItemPodLocations[item]
+
+            # choose next location based on shortest distance from the before chosen location.
+            distances = {i: self.distance_ij[str(chosenPath[-1]), str(i)] for i in PodLocations}
+            # get the pod location with the minimum distance
+            res = [key for key in distances if distances[key] == min(distances.values())]
+
+            chosenPath.append(res[0])
+            # repeat until all items have a pos location assigned
+
+        # delete OutputStation
+        chosenPath.pop(0)
+
+        # remove duplicates
+        chosenPath = list(dict.fromkeys(chosenPath))
+
+        return chosenPath
 
 
 

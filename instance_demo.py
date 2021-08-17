@@ -26,21 +26,40 @@ import copy
 import random
 import sys
 
+warehouse = '24'
 
-layoutFile = r'data/layout/1-1-1-2-1.xlayo'
-podInfoFile = 'data/sku24/pods_infos.txt'
+if warehouse == '360':
+    layoutFile = r'data/layout/1-1-1-2-1.xlayo'
+    podInfoFile = 'data/sku360/pods_infos.txt'
 
-# info on the warehouse layout, bots. pick locations, waypoints etc.
-instances = {}
-instances[24,2] = r'data/sku24/layout_sku_24_2.xml'
+    # info on the warehouse layout, bots. pick locations, waypoints etc.
+    instances = {}
+    instances[360, 2] = r'data/sku360/layout_sku_360_2.xml'
 
-storagePolicies = {}
-storagePolicies['dedicated'] = 'data/sku24/pods_items_dedicated_1.txt'
-#storagePolicies['mixed'] = 'data/sku24/pods_items_mixed_shevels_1-5.txt'
+    storagePolicies = {}
+    #storagePolicies['dedicated'] = 'data/sku360/pods_items_dedicated_1.txt'
+    storagePolicies['mixed'] = 'data/sku24/pods_items_mixed_shevels_1-5.txt' # TODO: make it possible to change sotorage policy by way of passing an argument, not commenting this line.
 
-orders = {}
-orders['10_5']=r'data/sku24/orders_10_mean_5_sku_24.xml'
-#orders['20_5']=r'data/sku24/orders_20_mean_5_sku_24.xml'
+    orders = {}
+    orders['10_5'] = r'data/sku360/orders_10_mean_5_sku_360.xml'
+    #orders['20_5'] = r'data/sku360/orders_20_mean_5_sku_360.xml'
+
+else:
+    warehouse = '24'
+    layoutFile = r'data/layout/1-1-1-2-1.xlayo'
+    podInfoFile = 'data/sku24/pods_infos.txt'
+
+    # info on the warehouse layout, bots. pick locations, waypoints etc.
+    instances = {}
+    instances[24,2] = r'data/sku24/layout_sku_24_2.xml'
+
+    storagePolicies = {}
+    #storagePolicies['dedicated'] = 'data/sku24/pods_items_dedicated_1.txt'
+    storagePolicies['mixed'] = 'data/sku24/pods_items_mixed_shevels_1-5.txt'
+
+    orders = {}
+    orders['10_5']=r'data/sku24/orders_10_mean_5_sku_24.xml'
+    #orders['20_5']=r'data/sku24/orders_20_mean_5_sku_24.xml'
 
 
 
@@ -163,14 +182,15 @@ class Demo():
         self.batch_weight = 18
         #[0]
         self.warehouseInstance = self.prepareData()
-        self.distance_ij = self.initData()
+        #self.distance_ij = self.initData()
+        self.warehouseInstance.distance_ij = self.initData()
         #[2]
         if storagePolicies.get('dedicated'):
             self.is_storage_dedicated = True
         else:
             self.is_storage_dedicated = False
 
-        self.item_id_pod_id_dict = self.getPodforItems()
+        #self.item_id_pod_id_dict = self.getPodforItems() FIXME: I think this is duplicate to the warehouse Attribute ItemPodLocations and can be deleted
 
         #self.solution1 = self.initSolution()
         #self.solution2 = self.initSolution()
@@ -255,6 +275,7 @@ class Demo():
     def shortestPathTSP(self, OutputStation):
         # input: packing station
                # stationstovisit
+        print("[7] Starting Calculation of shortest Routes with TSP")
 
         BotVelocity = 2  # dynamically draw this value from BotClass
         PickerVelocity = 1.3  # picker speed
@@ -266,13 +287,22 @@ class Demo():
         AllTravelDistances = []
         AllBatchesStations = list(self.warehouseInstance.BatchesDF['StationsToVisit'])
 
-        SA_tsp = approximation.traveling_salesman.simulated_annealing_tsp
         tsp = approximation.traveling_salesman.traveling_salesman_problem
-        tsp_method = lambda G, wt: SA_tsp(G, "greedy", weight=wt, temp=500)
+
+        SA_tsp = approximation.traveling_salesman.simulated_annealing_tsp
+        GR_tsp = approximation.traveling_salesman.greedy_tsp
+        CF_tsp = approximation.traveling_salesman.christofides
+        TA_tsp = approximation.traveling_salesman.threshold_accepting_tsp
+
+        #tsp_method = lambda G, wt: SA_tsp(G, "greedy", weight='weight', temp=500)       # simmulated annealing TSP
+        tsp_method = lambda G, wt: GR_tsp(G, weight='weight' )                          # Greedy TSP
+        #tsp_method = lambda G, wt: CF_tsp(G, weight='weight' )                          # Christofides TSP
+        #tsp_method = lambda G, wt: TA_tsp(G, "greedy", weight='weight' )                # Treshold Accepting TSP
 
 
         i = 0
         for j in AllBatchesStations:
+            print(f"[7_{i}] TSP instance {i} of {len(AllBatchesStations)}")
             stationsToVisit = copy.deepcopy(j)
             stationsToVisit.insert(0, OutputStation)
 
@@ -301,8 +331,10 @@ class Demo():
         self.warehouseInstance.BatchesDF[col_name_time_per_order] = self.warehouseInstance.BatchesDF[col_name_time] / self.warehouseInstance.BatchesDF['OrderCount']
         # TODO: work with this self.warehouseInstance.BatchesDF['ItemCount'][i] indexing instead of making columns to list and iterating over them.
 
+
+
     # using a greedy heuristic to find a solution to task 1
-    def greedyHeuristicT1(self):
+    def greedyHeuristic_T1(self):
         # Assumption: there are only 2 packing station and 2 cobots. This is consistent with both 24 and 360 layouts
         # Keep track of time for each packer and cobot. Prep time is 30 seconds (only assigned at the beginning), so each time is
         # initialized at 30 seconds.
@@ -418,8 +450,6 @@ class Demo():
         ### Yes the makespan is the time at which both packers are done packing the last orders, so
         # makespan = max(TimePacker_List)
 
-
-
     def calculateMakeSpan(self, batch_assignments):
 
         OrdersTable = self.warehouseInstance.BatchesDF[
@@ -456,16 +486,17 @@ class Demo():
 
         makespan = max(TimePacker_List)
         return makespan
-
-    def saNeighborhood(self, initialSolution):
+    def saNeighborhood_T2(self, initialSolution, T = 100, alpha = 0.8):
         print("Start SA")
         s = initialSolution
         s_optimal = copy.deepcopy(s)
         makespan_s = self.calculateMakeSpan(s)
         makespan_s_optimal = copy.deepcopy(makespan_s)
         print(makespan_s)
-        T = 100
-        alpha = 0.8
+
+        #T = 100
+        #alpha = 0.8
+
         i = 0
         while T>10:
             i += 1
@@ -517,10 +548,19 @@ class Demo():
             print("makespan_s_optimal", makespan_s_optimal)
             T = T*alpha
             #print(T)
+            print(str(makespan_s) + ':   ' + str(s))
+            print(str(makespan_s_optimal) + ':   ' + str(s_optimal))
+
+            filename = 'Solutions/Task_2/'  + warehouse + '_' + str(makespan_s) + '_solution_taks2_simmulated_annealing_neighborhood.xml'
+
+            _demo.writeToXML(filename, s)
 
 
 
+    def greedyHeuristic_MixedPolicy_T3(self):
 
+
+        pass
 
     ######################### start functions #########################
 	# warehouse instance
@@ -555,7 +595,7 @@ class Demo():
         return solution
 
     # generate ItemID - PodLocation dictionary.
-    def getPodforItems(self):
+    def getPodforItems(self):   # TODO: dstinguish mixed and dedicated storage policy)1
         ''':key
         method to collect the pod in which each item is located. can be adapoted for a mixed storage policy where items can be contained in multiple pods.
         '''
@@ -572,7 +612,7 @@ class Demo():
                         item_id_pod_id_dict[itemPodID].append(j)
 
 
-        return item_id_pod_id_dict  # a dictionary with item IDs as keys and a list of pod locations as value.
+        return item_id_pod_id_dict  # a dictionary with item IDs as keys and a list of pod locations as value.      # TODO:
 
     # generated a Graph as an attribute of the warehouseInstance.
     def generateGraph(self):
@@ -582,9 +622,9 @@ class Demo():
         # adding all nodes and edges to the network graph
         all_nodes = list(self.warehouseInstance.OutputStations) + list(self.warehouseInstance.Pods)
         G.add_nodes_from(all_nodes)
-        G.add_edges_from(self.distance_ij)  ## weighted edged are taken in the format [[1,2,666],[2,3,5565],[],[],[]]
+        G.add_edges_from(self.warehouseInstance.distance_ij)  ## weighted edged are taken in the format [[1,2,666],[2,3,5565],[],[],[]]
         # setting the edges weights.
-        nx.set_edge_attributes(G, values=self.distance_ij, name='weight')
+        nx.set_edge_attributes(G, values=self.warehouseInstance.distance_ij, name='weight')
 
         nx.draw(G, with_labels=True)
         plt.savefig("network_img.png")
@@ -594,8 +634,11 @@ class Demo():
         else:
             print('WarehouseGraph has unconnected nodes!')
 
+        print(f"[6_b] Network has {G.number_of_nodes()} nodes")
+        print(f"[6_c] Network has {G.number_of_edges()} edges")
 
-    def writeToXML(self):
+
+    def writeToXML(self, filename, BatchAssignCobot_List):
         # base element
         root = ET.Element("root")
         # first section "split" contains information about which orders are in which batches, and which batches are assigned to which station (=bot)
@@ -607,12 +650,12 @@ class Demo():
             bot_id = ET.SubElement(split, "Bot")
             bot_id.set("ID", str(bot))   # adding cobot ID to the XML structure
 
-            for batch in self.BatchAssignCobot_List[int(bot)]:
+            for batch in BatchAssignCobot_List[int(bot)]:
                 batch_id = ET.SubElement(bot_id, "Batch")
-                batch_id.set("ID", str(self.BatchAssignCobot_List[int(bot)].index(batch)+1))  # adding batch ID to the XML structure
+                batch_id.set("ID", str(BatchAssignCobot_List[int(bot)].index(batch)+1))  # adding batch ID to the XML structure
                 orders = ET.SubElement(batch_id, "Orders")
 
-                for order in self.BatchAssignCobot_List[int(bot)][self.BatchAssignCobot_List[int(bot)].index(batch)]:
+                for order in BatchAssignCobot_List[int(bot)][BatchAssignCobot_List[int(bot)].index(batch)]:
                     order_elem = ET.SubElement(orders, "Order")         #adding orders to the batches
                     order_elem.text = 'OC' + str(order)
 
@@ -627,11 +670,11 @@ class Demo():
             bot_id.set("refill", "-1")
             batch_id = ET.SubElement(bot_id, "Batches")
 
-            for batch in self.BatchAssignCobot_List[int(bot)]:
+            for batch in BatchAssignCobot_List[int(bot)]:
 
                 df_col_travelDist = 'travelDist_OutD' + bot
                 batches = ET.SubElement(batch_id, "Batch")
-                batches.set("BatchNumber", str(self.BatchAssignCobot_List[int(bot)].index(batch)+1))
+                batches.set("BatchNumber", str(BatchAssignCobot_List[int(bot)].index(batch)+1))
                 batches.set("Distance", str(self.warehouseInstance.BatchesDF.loc[self.warehouseInstance.BatchesDF['Batch'].astype(str) == str(batch)][df_col_travelDist].values[0]))
 
                 items_data = ET.SubElement(batches, "ItemsData")
@@ -641,7 +684,7 @@ class Demo():
                 for order in self.warehouseInstance.Orders:
                     order_elem = ET.SubElement(orders, "Order")  # adding orders to the batches
                     order_elem.set("ID", 'OC' + str(order.OrderID))
-                    if order.OrderID in self.BatchAssignCobot_List[int(bot)][self.BatchAssignCobot_List[int(bot)].index(batch)]:
+                    if order.OrderID in BatchAssignCobot_List[int(bot)][BatchAssignCobot_List[int(bot)].index(batch)]:
                         #loop over all items in order
                         for item in self.warehouseInstance.Orders[order.OrderID].Positions:
                             for position in range(len(self.warehouseInstance.Orders[order.OrderID].Positions[item].Count)):
@@ -671,58 +714,9 @@ class Demo():
         tree.write(filename, encoding="utf-8", xml_declaration=True)
 
 
-        # # first section "bots" contains detailed information about each bot (station)
-        # bots = ET.SubElement(collecting, "Bots")
-        # # write each station as a sub-node of bots
-        # for station in packingStationNames:
-        #     Bot_ID = ET.SubElement(bots, "Bot")
-        #     Bot_ID.set("ID", station) # TODO: find this information in our class strcuture
-        #     stationSolution = result[station]
-        #     # batches are written in sub-node Batches of Bot_ID
-        #     Batches = ET.SubElement(Bot_ID, "Batches")
-        #     # write each batch as a sub-node of Bot_ID
-        #     batchID = 1
-        #     for batch in stationSolution:
-        #         Batch_ID = ET.SubElement(Batches, "Batch")
-        #         Batch_ID.set("BatchNumber", str(batchID)) # TODO: find this information in our class strcuture
-        #         Batch_ID.set("Distance", str(batch["distance"])) # TODO: find this information in our class strcuture
-        #         Batch_ID.set("Weight", str(batch["weight"])) # TODO: find this information in our class strcuture
-        #         batchID += 1
-        #         # for each batch, write two sub-nodes: itemsData, edges
-        #         # first write ItemsData
-        #         ItemsData = ET.SubElement(Batch_ID, "ItemsData")
-        #         # ItemsData has a sub-node called Orders
-        #         Orders = ET.SubElement(ItemsData, "Orders")
-        #         # write each order as sub-node of Orders:
-        #         for order in batch["ordersInBatch"]:
-        #             Order = ET.SubElement(Orders, "Order")
-        #             Order.set("ID", str(order)) # TODO: find this information in our class strcuture
-        #
-        #             # write each item in the order as sub-node of Order
-        #             itemList = F_itemsInOrder(int(order))
-        #             for item in itemList:
-        #                 Item = ET.SubElement(Order, "Item")
-        #                 # for each item, conclude information about the itemID and the description
-        #                 Item.set("ID", str(item))
-        #                 Item.set("Type", itemInfoList.loc[item, "Description"])
-        #
-        #         # write Edges as sub-node of Batch_ID
-        #         Edges = ET.SubElement(Batch_ID, "Edges")
-        #         # write every edge of the batch
-        #         edgeIndex = list(range(0, len(batch["routeInBatch"]) - 1))
-        #         for edge in edgeIndex:
-        #             Edge = ET.SubElement(Edges, "Edge")
-        #             Edge.set("StartNode", str(batch["routeInBatch"][edge]))
-        #             Edge.set("EndNode", str(batch["routeInBatch"][edge + 1]))
-        #
-        # tree = ET.ElementTree(root)
-        # tree.write(filename)
 
 
-
-    # deprecated/unused:
-
-
+    #currently unused:
     def getTravelRouteofBatch(self):#, Batch, OutputStation):
         '''
         calculates the route and travel time of each batch, based on the batch and the output station
@@ -876,23 +870,25 @@ if __name__ == "__main__":
     # preparing warehouse attributes like network graph, batching, orders dataframes etc.
     _demo.prepareWarehouseInformation()
 
-    # applying greedy heuristic to find solution for task 1
-    _demo.greedyHeuristicT1()
+    # run task 1 and 2 only for dedicated storage policy
+    if storagePolicies.get('dedicated'):
+        # Task 1.1 Greedy Heuristic
+        _demo.greedyHeuristic_T1()
+        makespan = _demo.calculateMakeSpan(_demo.BatchAssignCobot_List)
+        filename = 'Solutions/Task_1/' + warehouse +'_' + str(makespan) + '_solution_taks1_greedy_heuristic.xml'
+        _demo.writeToXML(filename, _demo.BatchAssignCobot_List)
 
-    _demo.writeToXML('solution_taks1_greedy_heuristic.xml')
+        # Task 2.1 Simmunaletd Annealing
+        _demo.saNeighborhood_T2(_demo.BatchAssignCobot_List, T=100, alpha=0.8)
 
 
-    #_demo.SimulatedAnnealing())
-
-    #_demo.writeToXML()
-    #_demo.greedyHeuristicT1()
-    #_demo.calculateMakeSpan([[[2], [3, 7], [1], [9]], [[0], [4, 6], [5], [8]]])
-    _demo.saNeighborhood([[[2], [3, 7], [1], [9]], [[0], [4, 6], [5], [8]]])
+    elif storagePolicies.get('mixed'):
+        # Task 3.1 Greedy Heuristic for Mixed Policy
+        _demo.greedyHeuristic_T1()
+        makespan = _demo.calculateMakeSpan(_demo.BatchAssignCobot_List)
+        filename = 'Solutions/Task_3/' + warehouse + '_' + str(makespan) + '_solution_taks3_greedy_heuristic_mixed_policy.xml'
+        _demo.writeToXML(filename, _demo.BatchAssignCobot_List)
 
     print(1)
-    #solution1.savetoxml(path)
-
-    #solution2 =
-    #solution3 =
 
 
