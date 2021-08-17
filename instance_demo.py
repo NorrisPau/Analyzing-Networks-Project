@@ -23,6 +23,9 @@ import untangle
 import numpy as np
 import itertools
 import copy
+import random
+import sys
+
 
 layoutFile = r'data/layout/1-1-1-2-1.xlayo'
 podInfoFile = 'data/sku24/pods_infos.txt'
@@ -320,6 +323,7 @@ class Demo():
         # Initialize table of feasible orders
         OrdersTable = self.warehouseInstance.BatchesDF[['Batch', 'travelTime_OutD0', 'travelTime_OutD1', 'travelTimeperOrder_OutD0', 'travelTimeperOrder_OutD1']]
 
+
         ##### I could write this in a loop. If there's time
         # First batch assignment
 
@@ -448,6 +452,71 @@ class Demo():
 
         makespan = max(TimePacker_List)
         return makespan
+
+    def saNeighborhood(self, initialSolution):
+        print("Start SA")
+        s = initialSolution
+        s_optimal = copy.deepcopy(s)
+        makespan_s = self.calculateMakeSpan(s)
+        makespan_s_optimal = copy.deepcopy(makespan_s)
+        print(makespan_s)
+        T = 100
+        alpha = 0.8
+        i = 0
+        while T>10:
+            i += 1
+            #print("Iteration", i)
+            # randomly select a cobot
+            cobot = int(np.random.randint(0, len(initialSolution), 1))
+            other_cobot = int(bool(cobot)==False)
+            # randomly select a batch to drop
+            dropped_batch_index = int(np.random.randint(0, len(s[cobot]), 1))
+            dropped_batch = s[cobot][dropped_batch_index]
+            s_prime = copy.deepcopy(s)
+            s_prime[cobot].remove(dropped_batch)
+            #print("s= ", s)
+            #print("dropped_batch", dropped_batch)
+            #print("s_prime=", s_prime)
+
+            # if the batch contains multiple orders, the orders may get split up
+            possible_batches = []
+            if len(dropped_batch)>1:
+                for L in range(1, len(dropped_batch) + 1):
+                    for subset in itertools.combinations(dropped_batch, L):
+                        possible_batches.append(list(subset))
+            else:
+                possible_batches.append(dropped_batch)
+            which_cobot = other_cobot
+            while len(possible_batches)>0:
+                # pick a random batch
+                adding_batch = possible_batches[int(np.random.randint(0, len(possible_batches), 1))]
+                # add that batch to the other cobot
+                s_prime[which_cobot].append(adding_batch)
+                # remove this batch and any other containing that order
+                dropping_batches = []
+                for sub in possible_batches:
+                    if any(item in adding_batch for item in sub) == True:
+                        dropping_batches.append(sub)
+                for drop in dropping_batches:
+                    possible_batches.remove(drop)
+                # flip cobot so next batch gets assigned to other one
+                which_cobot = int(bool(which_cobot) == False)
+            makespan_s_prime = self.calculateMakeSpan(s_prime)
+            #print("makespan_s", makespan_s)
+            #print("makespan_s_prime",makespan_s_prime)
+            if (makespan_s_prime < makespan_s) or math.exp(-(makespan_s_prime-makespan_s)/T) > random.random():
+                s = copy.deepcopy(s_prime)
+                makespan_s = copy.deepcopy(makespan_s_prime)
+            if makespan_s < makespan_s_optimal:
+                s_optimal = copy.deepcopy(s)
+                makespan_s_optimal = copy.deepcopy(makespan_s)
+            print("makespan_s_optimal", makespan_s_optimal)
+            T = T*alpha
+            #print(T)
+
+
+
+
 
     ######################### start functions #########################
 	# warehouse instance
@@ -753,8 +822,10 @@ if __name__ == "__main__":
     _demo.prepareWarehouseInformation()
 
     # applying greedy heuristic to find solution for task 1
-    _demo.greedyHeuristicT1()
-    _demo.calculateMakeSpan([[[2], [3, 7], [1], [9]], [[0], [4, 6], [5], [8]]])
+    #_demo.greedyHeuristicT1()
+    #_demo.calculateMakeSpan([[[2], [3, 7], [1], [9]], [[0], [4, 6], [5], [8]]])
+    _demo.saNeighborhood([[[2], [3, 7], [1], [9]], [[0], [4, 6], [5], [8]]])
+
     print(1)
     #solution1.savetoxml(path)
 
