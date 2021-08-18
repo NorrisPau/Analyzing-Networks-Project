@@ -54,8 +54,8 @@ else:
     instances[24,2] = r'data/sku24/layout_sku_24_2.xml'
 
     storagePolicies = {}
-    #storagePolicies['dedicated'] = 'data/sku24/pods_items_dedicated_1.txt'
-    storagePolicies['mixed'] = 'data/sku24/pods_items_mixed_shevels_1-5.txt'
+    storagePolicies['dedicated'] = 'data/sku24/pods_items_dedicated_1.txt'
+    #storagePolicies['mixed'] = 'data/sku24/pods_items_mixed_shevels_1-5.txt'
 
     orders = {}
     orders['10_5']=r'data/sku24/orders_10_mean_5_sku_24.xml'
@@ -206,6 +206,7 @@ class Demo():
 
         # calculates the items and pod locations for all the batches and writes it to BatchesDF
         self.warehouseInstance.getItemPodsBatchDF()
+        self.warehouseInstance.getPodZones()
 
         # generates a Graph of the Warehouse to be used in traveling salesman probelem.
         self.generateGraph()
@@ -666,7 +667,7 @@ class Demo():
         print(f"[6_b] Network has {G.number_of_nodes()} nodes")
         print(f"[6_c] Network has {G.number_of_edges()} edges")
 
-
+    # writes the solution to xml file in the desired structure
     def writeToXML(self, filename, BatchAssignCobot_List):
         # base element
         root = ET.Element("root")
@@ -853,7 +854,6 @@ class Demo():
 
         self.TravelRoute = chosenTravelRoute
         self.TravelRouteTime = TotalRouteTime
-
     def getPackingTimeofBatch(self):#, #ofOrdersinBatch):
         # calculates time needed for packing a batch of orers at the OutputStation
         unloadCobot = 20        # per batch

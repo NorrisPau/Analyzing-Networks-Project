@@ -86,7 +86,7 @@ class PodLayout:
 class Pod:
     def __init__(self, podID = None, posX= 0, posY = 0, usedCapacity = None, maxCapacity = None, 
                  reservedCapacity = None, tag = None, readyForRefill = None, items = None, rad = None, orientation = None, 
-                 tier = None):
+                 tier = None, PickingZone = None):
         self.ID = podID
         self.Position = np.array((float(posX),float(posY)))
         self.UsedCapacity = usedCapacity
@@ -101,6 +101,7 @@ class Pod:
         self.Radius = rad
         self.Orientation = orientation
         self.Tier = tier
+        self.PickingZone = None
 
 class Bot:
     def __init__(self, ID, podTransTime, maxAcc, maxDec, maxVel, turnSpeed,
@@ -348,6 +349,7 @@ class Warehouse:
         self.InstanceFile = instanceFile
         self.Bots = None
         self.Pods = None
+        self.PickingZones = None
         self.ChargingStations = None
         self.PickLocations = None
         self.InputStations = None
@@ -817,6 +819,37 @@ class Warehouse:
         return chosenPath
 
 
+    def getPodZones(self):
+        podYlocations = {}
+        pickingZones = {}       # init pickingZones dict
+
+        ## finding all the Y Coordinates for all Pods.
+        # the idea is, that pods make rows, that can be assigned to the zones, which are horizontally aligned.
+        for pod in self.Pods.values():
+            podYlocations[pod.ID] = pod.Position[1]
+        # remove duplicates
+        distinctYlocations = list(dict.fromkeys(podYlocations.values()))
+        distinctYlocations.sort(reverse=False)
+
+        ## now we loop through the distinct Y coordinates from the lowest to the highest and
+        # pick the two lowest Y coordinates and assign all pods that have these coordinates to the first Zone.
+        # remove the coordinates from the list and go on until the list is empty
+        PickingZone = 1
+        while distinctYlocations != []:
+            podRows = distinctYlocations[0:2]
+            podsOfPickingZone = []
+
+            # loop though the pods and assign them if they have the same Y coordinates as the PickingZone of the iteration
+            for pod in self.Pods.values():
+                if pod.Position[1] in podRows:
+                    pod.PickingZone = PickingZone
+                    podsOfPickingZone.append(pod)
+
+            pickingZones[PickingZone] = podsOfPickingZone
+            distinctYlocations.pop(0)
+            distinctYlocations.pop(0)
+            PickingZone += 1
+        self.PickingZones = pickingZones
 
 #Warehouse class, that holds all information about the warehouse
 class WarehouseLite:
