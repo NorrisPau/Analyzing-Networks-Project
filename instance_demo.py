@@ -450,7 +450,7 @@ class Demo():
         self.TimePacker_List = TimePacker_List  #TODO: could this be used as a makespan time? max(TimeCobot_List, TimePacker_List)
         ### Yes the makespan is the time at which both packers are done packing the last orders, so
         # makespan = max(TimePacker_List)
-
+    """
     def calculateMakeSpan(self, batch_assignments):
 
         OrdersTable = self.warehouseInstance.BatchesDF[
@@ -487,6 +487,113 @@ class Demo():
 
         makespan = max(TimePacker_List)
         return makespan
+    """
+
+    def calculateMakeSpan(self, batch_assignments):
+
+        OrdersTable = self.warehouseInstance.BatchesDF[
+            ['Batch', 'shortestRoute_OutD0', 'shortestRoute_OutD1']]
+        TimePackers = [30, 30]
+        TimeCobots = [30, 30]
+        BatchCounter = [0, 0]
+        OrdersPerBatch = [[],[]]
+        Routes = [[],[]]
+        Full_Route = [[], []]
+
+        # Find routes that cobots will be traveling
+        for cobot in range(2):
+            for batch in batch_assignments[cobot]:
+                route = OrdersTable[OrdersTable.Batch.apply(lambda x: x == batch)].iloc[0,cobot+1]
+                Routes[cobot].append(route)
+                Full_Route[cobot] = Full_Route[cobot] + route[0:-1]
+                OrdersPerBatch[cobot].append(len(batch))
+        Full_Route[0].append('OutD0')
+        Full_Route[1].append('OutD1')
+
+        # Send cobots to first item
+        for cobot in range(2):
+            distance = self.warehouseInstance.distance_ij[tuple(Routes[cobot][0][0:2])]
+            time = distance/2
+            TimeCobots[cobot] += time
+            Full_Route[cobot] = Full_Route[cobot][1:]
+
+        zone_occupied = 99999
+        zone_occ_time = []
+        zone_occ_last_item = 99999
+
+        ##### This loop will run until both cobots have completed their orders
+        # Each iteration of the loop starts (and ends) when a cobot has arrived in a NEW PICKING ZONE.
+        # Ex: Cobot1 has arrived in zone1 (start of loop). He completes all orders in that zone and moves to his next picking location...
+        # in a new zone (loop ends). His ending time is the arrival time in the next zone. Anytime a cobot completes a batch, the packers time is adjusted,
+        # and the cobot is sent to his next picking zone. The loop ends when the cobot arrives in his next PICKING ZONE.
+
+        while (Full_Route[0] != []) or (Full_Route[1] != []):
+            # choose cobot with lower time, help this cobot until all items in the zone are completed
+            current_cobot = TimeCobots.index(min(TimeCobots))
+            # if this cobot has not items remaining, switch cobots
+            if Full_Route[current_cobot] == []:
+                current_cobot = int(bool(current_cobot) == False)
+
+            current_cobot_item = Full_Route[current_cobot][0]
+            current_cobot_next_item = Full_Route[current_cobot][1]
+            current_cobot_zone = self.warehouseInstance.Pods[current_cobot_item].PickingZone
+
+            ### Has the current cobot arrived in a picking zone where the picker is busy?
+            if current_cobot_zone == zone_occupied:
+                # Calculate time for picker to walk from other cobot's last item to current cobot's first item
+                distance = self.warehouseInstance.distance_ij[tuple([str(zone_occ_last_item), current_cobot_item])]
+                time = distance / 1.3
+                zone_occ_time[1] += time
+                if zone_occ_time[0] <= TimeCobots[current_cobot] <= zone_occ_time[1]:
+                    TimeCobots[current_cobot] = max(TimeCobots[current_cobot], zone_occ_time[1])
+
+            zone_occupied = copy.deepcopy(current_cobot_zone)
+            zone_occ_time = [TimeCobots[current_cobot]]
+            if current_cobot_next_item in ['OutD0','OutD1']:
+                next_item_zone = 99999
+            else:
+                next_item_zone = self.warehouseInstance.Pods[current_cobot_next_item].PickingZone
+
+            while next_item_zone == current_cobot_zone:
+                distance = self.warehouseInstance.distance_ij[tuple(Full_Route[current_cobot][0:2])]
+                time = 3 + (distance / 1.3)
+                TimeCobots[current_cobot] += time
+                Full_Route[current_cobot] = Full_Route[current_cobot][1:]
+                current_cobot_next_item = Full_Route[current_cobot][1]
+                if current_cobot_next_item in ['OutD0', 'OutD1']:
+                    next_item_zone = 99999
+                else:
+                    next_item_zone = self.warehouseInstance.Pods[current_cobot_next_item].PickingZone
+
+            zone_occ_time.append(TimeCobots[current_cobot] + 3)
+            zone_occ_last_item = Full_Route[current_cobot][0]
+            # send cobot to next zone
+            distance = self.warehouseInstance.distance_ij[tuple(Full_Route[current_cobot][0:2])]
+            time = 3 + (distance / 2)
+            TimeCobots[current_cobot] += time
+            Full_Route[current_cobot] = Full_Route[current_cobot][1:]
+
+            # If cobot ends in a packing station, then we must account for that and send cobot to next item
+            if Full_Route[current_cobot][0] in ['OutD0','OutD1']:
+                TimeCobots[current_cobot] = max(TimeCobots[current_cobot], TimePackers[current_cobot])
+                TimePackers[current_cobot] = max(TimeCobots[current_cobot], TimePackers[current_cobot])
+                # Now that both are ready, add time to unpack
+                TimeCobots[current_cobot] += 20
+
+                # The packer also adds the unload time, and also packing time for each item
+                TimePackers[current_cobot] += 20 + (60 * OrdersPerBatch[current_cobot][BatchCounter[current_cobot]])
+                # Keep track of which batch the cobot is fullfilling
+                BatchCounter[current_cobot] += 1
+
+                # Send cobot to next item
+                if len(Full_Route[current_cobot]) > 1:
+                    distance = self.warehouseInstance.distance_ij[tuple(Full_Route[current_cobot][0:2])]
+                    time = 3 + (distance / 2)
+                    TimeCobots[current_cobot] += time
+                Full_Route[current_cobot] = Full_Route[current_cobot][1:]
+
+        return max(TimePackers)
+
     def saNeighborhood_T2(self, initialSolution, T = 100, alpha = 0.8):
         print("Start SA")
         s = initialSolution
@@ -898,7 +1005,8 @@ if __name__ == "__main__":
 
     # preparing warehouse attributes like network graph, batching, orders dataframes etc.
     _demo.prepareWarehouseInformation()
-
+    _demo.calculateMakeSpan([[[1],[4]], [[2,3,7],[9]]])
+"""
     # run task 1 and 2 only for dedicated storage policy
     if storagePolicies.get('dedicated'):
         # Task 1.1 Greedy Heuristic
@@ -921,5 +1029,13 @@ if __name__ == "__main__":
         _demo.writeToXML(filename, _demo.BatchAssignCobot_List)
 
     print(1)
+[[1],[4,9],[0,6]], [[2,3,7],[8],[5]]
+
+"""
 
 
+#[20,50,70,100],[250,270],[300,340]
+#[30,60,80,120],[180,200],[230,260,330]
+
+#[20,50]
+#[30,60]
