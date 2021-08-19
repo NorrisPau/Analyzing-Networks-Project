@@ -451,44 +451,6 @@ class Demo():
         ### Yes the makespan is the time at which both packers are done packing the last orders, so
         # makespan = max(TimePacker_List)
 
-    """ ## old makespan method
-    def calculateMakeSpan(self, batch_assignments):
-
-        OrdersTable = self.warehouseInstance.BatchesDF[
-            ['Batch', 'travelTime_OutD0', 'travelTime_OutD1']]
-        # The cobot/packer times will be calculated seperately for each cobot. The outer loop cyles through each cobot
-        # the inner loop cycles through assigned batches
-        TimePacker_List = []
-        for cobot in range(len(batch_assignments)):
-            i = 0
-            for batch in batch_assignments[cobot]:
-                i += 1
-                # Get the time it takes to complete the next batch
-                #print(OrdersTable)
-                batchTime = int(OrdersTable.iloc[:,cobot+1][OrdersTable.Batch.apply(lambda x: x == batch)])
-                # for the first iteration (batch) of each cobot, we need to reinitialize the times
-                if i == 1:
-                    TimeCobot = 30
-                    TimePacker = 30
-                    TimeCobot += batchTime + 20
-                    TimePacker += batchTime + 20 + 60 * len(batch)
-                # all other iterations go through here. We add time in a similar manner to the greedy algorithm
-                else:
-                    TimeCobot += batchTime
-                    # cobot and packer must wait until both are read
-                    TimeCobot = max(TimeCobot,TimePacker)
-                    TimePacker = max(TimeCobot,TimePacker)
-
-                    # Now that both are ready, add time to unpack
-                    TimeCobot += 20
-
-                    # The packer also adds the unload time, and also packing time for each item
-                    TimePacker += 20 + 60 * len(batch)
-            TimePacker_List.append(TimePacker)
-
-        makespan = max(TimePacker_List)
-        return makespan
-    """
 
     def calculateMakeSpan(self, batch_assignments):
 
@@ -518,9 +480,14 @@ class Demo():
             TimeCobots[cobot] += time
             Full_Route[cobot] = Full_Route[cobot][1:]
 
-        zone_occupied = 99999
-        zone_occ_time = []
-        zone_occ_last_item = 99999
+        picking_zone_list = []
+        zone_occupied = {}
+        for pod in self.warehouseInstance.Pods:
+            picking_zone = self.warehouseInstance.Pods[pod].PickingZone
+            if picking_zone not in picking_zone_list:
+                picking_zone_list.append(picking_zone)
+                zone_occupied[picking_zone] = {'occ_time':[99999,99999], 'last_item':99999}
+
 
         ##### This loop will run until both cobots have completed their orders
         # Each iteration of the loop starts (and ends) when a cobot has arrived in a NEW PICKING ZONE.
@@ -540,16 +507,22 @@ class Demo():
             current_cobot_zone = self.warehouseInstance.Pods[current_cobot_item].PickingZone
 
             ### Has the current cobot arrived in a picking zone where the picker is busy?
-            if current_cobot_zone == zone_occupied:
+            # Grad occupied details for current zone, and check if the zone has been occupied before. If it hasn't, there no need to check for waiting periods.
+            zone_occ_last_item = zone_occupied[current_cobot_zone]['last_item']
+            if zone_occ_last_item != 99999:
+                zone_occ_time = zone_occupied[current_cobot_zone]['occ_time']
                 # Calculate time for picker to walk from other cobot's last item to current cobot's first item
                 distance = self.warehouseInstance.distance_ij[tuple([str(zone_occ_last_item), current_cobot_item])]
                 time = distance / 1.3
                 zone_occ_time[1] += time
+                # If the cobot arrives while the picker is busy, it must wait.
                 if zone_occ_time[0] <= TimeCobots[current_cobot] <= zone_occ_time[1]:
                     TimeCobots[current_cobot] = max(TimeCobots[current_cobot], zone_occ_time[1])
 
-            zone_occupied = copy.deepcopy(current_cobot_zone)
-            zone_occ_time = [TimeCobots[current_cobot]]
+            # This picker is now busy with the current cobot. Overwrite the starting "occupied picker" time
+            zone_occupied[current_cobot_zone]['occ_time'][0] = TimeCobots[current_cobot]
+
+            # Find next item zone and continue to assist cobot until next zone changes
             if current_cobot_next_item in ['OutD0','OutD1']:
                 next_item_zone = 99999
             else:
@@ -566,8 +539,11 @@ class Demo():
                 else:
                     next_item_zone = self.warehouseInstance.Pods[current_cobot_next_item].PickingZone
 
-            zone_occ_time.append(TimeCobots[current_cobot] + 3)
-            zone_occ_last_item = Full_Route[current_cobot][0]
+            # The picker is finished after picking the last item for this cobot
+            zone_occupied[current_cobot_zone]['occ_time'][1] = (TimeCobots[current_cobot] + 3)
+            # Update the item that the picker finished at
+            zone_occupied[current_cobot_zone]['last_item'] = Full_Route[current_cobot][0]
+
             # send cobot to next zone
             distance = self.warehouseInstance.distance_ij[tuple(Full_Route[current_cobot][0:2])]
             time = 3 + (distance / 2)
@@ -592,7 +568,6 @@ class Demo():
                     time = 3 + (distance / 2)
                     TimeCobots[current_cobot] += time
                 Full_Route[current_cobot] = Full_Route[current_cobot][1:]
-
         return max(TimePackers)
 
     def saNeighborhood_T2(self, initialSolution, T = 100, alpha = 0.8):
@@ -1144,7 +1119,7 @@ if __name__ == "__main__":
     # preparing warehouse attributes like network graph, batching, orders dataframes etc.
     _demo = Demo()
     _demo.prepareWarehouseInformation()
-    _demo.calculateMakeSpan([[[1],[4]], [[2,3,7],[9]]])
+    _demo.calculateMakeSpan([[[1],[4,9],[0,6]], [[2,3,7],[8],[5]]])
 
     # Task 1.1 Greedy Heuristic
     _demo.greedyHeuristic_T1()
@@ -1177,8 +1152,8 @@ if __name__ == "__main__":
     _demo_mixed.alNeighborhood()
 
     print(1)
-    [[1],[4,9],[0,6]], [[2,3,7],[8],[5]]
-
+    # Her optimal solution
+    # [[1],[4,9],[0,6]], [[2,3,7],[8],[5]]
 
 
 
