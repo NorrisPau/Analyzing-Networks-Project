@@ -361,9 +361,7 @@ class Demo():
         # Initialize table of feasible orders
         OrdersTable = self.warehouseInstance.BatchesDF[['Batch', 'travelTime_OutD0', 'travelTime_OutD1', 'travelTimeperOrder_OutD0', 'travelTimeperOrder_OutD1']]
 
-        ##### I could write this in a loop. If there's time
-        # First batch assignment
-
+        ### First batch assignment
         # Find batch with shortest time
         next_batch = OrdersTable.Batch[OrdersTable.travelTime_OutD0.idxmin()]
         next_batch_time = OrdersTable.travelTime_OutD0.min()
@@ -377,7 +375,7 @@ class Demo():
         dropping_rows = OrdersTable.Batch.apply(lambda x: any(item in next_batch for item in x))
         OrdersTable = OrdersTable[dropping_rows == False]
 
-        ### Do the exact same thing for cobot2
+        # Do the exact same thing for cobot2
         next_batch = OrdersTable.Batch[OrdersTable.travelTime_OutD1.idxmin()]
         next_batch_time = OrdersTable.travelTime_OutD1.min()
 
@@ -391,16 +389,8 @@ class Demo():
         OrdersTable = OrdersTable[dropping_rows == False]
 
         # The loop will continue to run until there are no feasible orders left. At each iteration the feasible orders will be reduced.
-        i = 0
         while len(OrdersTable) > 0:
             # Subset orders table into time columns
-            i += 1
-            print("Iteration", i)
-            print("Orders Left", OrdersTable)
-            print("Current Batch Assignments", BatchAssignCobot_List)
-            print("Cobot Times", TimeCobot_List)
-            print("Packer Times", TimePacker_List)
-
             batch_times = OrdersTable[['travelTimeperOrder_OutD0', 'travelTimeperOrder_OutD1']]
             # Find next available cobot
             next_available_cobot = TimeCobot_List.index(min(TimeCobot_List))
@@ -409,7 +399,6 @@ class Demo():
             next_batch_index = batch_times.iloc[:, next_available_cobot].idxmin()
             next_batch = OrdersTable.Batch[next_batch_index]
             next_batch_time = OrdersTable.loc[next_batch_index].iloc[next_available_cobot + 1]
-            print("next batch", next_batch)
             # Perform a check here! If its faster to send out the other cobot because the packer is still busy, then send the other cobot.
             completion_time1 = max(TimeCobot_List[next_available_cobot] + next_batch_time,
                                    TimePacker_List[next_available_cobot])
@@ -440,16 +429,9 @@ class Demo():
             dropping_rows = OrdersTable.Batch.apply(lambda x: any(item in next_batch for item in x))
             OrdersTable = OrdersTable[dropping_rows == False]
 
-
-        print(BatchAssignCobot_List)
-        print(TimeCobot_List)
-        print(TimePacker_List)
-
         self.BatchAssignCobot_List = BatchAssignCobot_List
         self.TimeCobot_List = TimeCobot_List
-        self.TimePacker_List = TimePacker_List  #TODO: could this be used as a makespan time? max(TimeCobot_List, TimePacker_List)
-        ### Yes the makespan is the time at which both packers are done packing the last orders, so
-        # makespan = max(TimePacker_List)
+        self.TimePacker_List = TimePacker_List
 
 
     def calculateMakeSpan(self, batch_assignments):
@@ -570,21 +552,15 @@ class Demo():
                 Full_Route[current_cobot] = Full_Route[current_cobot][1:]
         return max(TimePackers)
 
-    def saNeighborhood_T2(self, initialSolution, T = 100, alpha = 0.8):
-        print("Start SA")
+    def saNeighborhood_T2(self, initialSolution, T = 100, T_end = 10, alpha = 0.8):
         s = initialSolution
         s_optimal = copy.deepcopy(s)
         makespan_s = self.calculateMakeSpan(s)
         makespan_s_optimal = copy.deepcopy(makespan_s)
-        print(makespan_s)
-
-        #T = 100
-        #alpha = 0.8
 
         i = 0
-        while T>10:
+        while T>T_end:
             i += 1
-            #print("Iteration", i)
             # randomly select a cobot
             cobot = int(np.random.randint(0, len(initialSolution), 1))
             other_cobot = int(bool(cobot)==False)
@@ -593,9 +569,6 @@ class Demo():
             dropped_batch = s[cobot][dropped_batch_index]
             s_prime = copy.deepcopy(s)
             s_prime[cobot].remove(dropped_batch)
-            #print("s= ", s)
-            #print("dropped_batch", dropped_batch)
-            #print("s_prime=", s_prime)
 
             # if the batch contains multiple orders, the orders may get split up
             possible_batches = []
@@ -621,26 +594,25 @@ class Demo():
                 # flip cobot so next batch gets assigned to other one
                 which_cobot = int(bool(which_cobot) == False)
             makespan_s_prime = self.calculateMakeSpan(s_prime)
-            #print("makespan_s", makespan_s)
-            #print("makespan_s_prime",makespan_s_prime)
+
             if (makespan_s_prime < makespan_s) or math.exp(-(makespan_s_prime-makespan_s)/T) > random.random():
                 s = copy.deepcopy(s_prime)
                 makespan_s = copy.deepcopy(makespan_s_prime)
             if makespan_s < makespan_s_optimal:
                 s_optimal = copy.deepcopy(s)
                 makespan_s_optimal = copy.deepcopy(makespan_s)
-            print("makespan_s_optimal", makespan_s_optimal)
+
             T = T*alpha
-            #print(T)
-            print(str(makespan_s) + ':   ' + str(s))
-            print(str(makespan_s_optimal) + ':   ' + str(s_optimal))
+
+            #print(str(makespan_s) + ':   ' + str(s))
+            #print(str(makespan_s_optimal) + ':   ' + str(s_optimal))
 
             filename = 'Solutions/Task_2/'  + warehouse + '_' + str(round(makespan_s)) + '_solution_taks2_simmulated_annealing_neighborhood.xml'
 
             _demo.writeToXML(filename, s)
         return makespan_s_optimal
 
-    # method that contains a pertubation strategy for task 2.4
+    # method that contains a pertubation strategy for task 2.3
     def perturbSA(self, iterations):
         overall_optimal = 10000000
         while iterations > 0:
@@ -667,10 +639,9 @@ class Demo():
             makespan_s_optimal = self.saNeighborhood_T2(BatchAssignCobot_List)
             if makespan_s_optimal < overall_optimal:
                 overall_optimal = copy.deepcopy(makespan_s_optimal)
-            #print("overall_optimal", overall_optimal)
             iterations -= 1
 
-    #
+
     def alNeighborhood(self):
         # different solutions given in the FullBatchAssignment format, so that we can calculate the makespan on them)
         # s         initial solution (from task 3.1)
