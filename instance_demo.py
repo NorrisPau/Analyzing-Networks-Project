@@ -695,8 +695,8 @@ class Demo():
             #print("overall_optimal", overall_optimal)
             iterations -= 1
 
-    #
-    def alNeighborhood(self):
+    # Adaptive Large Neighborhood Search in Mixed Storage Policy Warehouse
+    def alNeighborhood(self, iterations = 100):
         # different solutions given in the FullBatchAssignment format, so that we can calculate the makespan on them)
         # s         initial solution (from task 3.1)
         # s_prime   candiate solution (after destroy and repair)
@@ -705,137 +705,118 @@ class Demo():
         s_prime = copy.deepcopy(s)
         s_star = copy.deepcopy(s)
 
-
-
         # 0. destroy operator set
-        destroy_operators = {'random_batch_subset': 1,'random_cobot': 1}
+        destroy_operators = {'random_batch_subset': 1, 'random_cobot': 1}
 
         # 0. repair operator set
-        repair_operators = {'most_items_batch_first': 1, 'fewest_items_batch_first': 1, 'random_fill': 1}
-
-        # 1a. choose destroy operator (roulette)
-        destroy_operator_choice = random.choices(list(destroy_operators.keys()),
-                                                 weights=list(destroy_operators.values()))
-
-        # 1b. destroy
-        if destroy_operator_choice == 'random_cobot':
-            # choose random cobot and destroy all batches assigned to that cobot, append destroyed batches to the desotryed batches list
-            random_cobot = int(np.random.randint(0, 2, 1))
-            destroyed_batches = s_prime[random_cobot]
-            s_prime[random_cobot] = []
-        elif destroy_operator_choice == 'random_batch_subset':
-            # destroy each batch with probability of 0.5 and append the destroyed batch to the destroyed batches list
-            destroyed_batches = []
-            i = 0
-            for cobot in s_prime:
-                j = 0
-                for batch in cobot:
-                    rand = int(np.random.randint(0, 2, 1))
-                    if rand == 0:
-                        destroyed_batches.append(batch)
-                        s_prime[i][j] = batch * rand
-                    j += 1
-                i += 1
+        repair_operators = {'most_items_batch_first': 1, 'fewest_items_batch_first': 1, 'random_fill': 1}#, 'shuffle_pods': 1}
 
 
-        # move all the batches to the beginning of the solution sequence
-        # we do not sort the destroyed solution, but puzrge the empty elemtsn and then when assigning,
-        # always assign to the cobot with less items in its list
-        # for i in range(len(s_prime)):
-        #    s_prime[i].sort(key=len, reverse=True)
-        # purge empty elements from list
-        s_prime = [[ele for ele in sub if ele != []] for sub in s_prime]
+        for it in range(iterations):
+            # 1a. choose destroy operator (roulette)
+            destroy_operator_choice = random.choices(list(destroy_operators.keys()),
+                                                     weights=list(destroy_operators.values()))
 
-        # TODO: order the list in a different way, i.e. shortest first, OR just empty elemts to the right.
-        # for i in range(len(s_prime)):
-        #    for j in range(len(s_prime[i])):
-        #        if len(s_prime[i][j]) > 0:
-        #            s_prime_sorted[i][j] =
+            # 1b. destroy
+            print(f'[ALNS-mixed][{it}] destroying solution ({destroy_operator_choice})')
+            if destroy_operator_choice == ['random_cobot']:
+                # choose random cobot and destroy all batches assigned to that cobot, append destroyed batches to the desotryed batches list
+                random_cobot = int(np.random.randint(0, 2, 1))
+                destroyed_batches = s_prime[random_cobot]
+                s_prime[random_cobot] = []
+            elif destroy_operator_choice == ['random_batch_subset']:
+                # destroy each batch with probability of 0.5 and append the destroyed batch to the destroyed batches list
+                destroyed_batches = []
+                i = 0
+                for cobot in s_prime:
+                    j = 0
+                    for batch in cobot:
+                        rand = int(np.random.randint(0, 2, 1))
+                        if rand == 0:
+                            destroyed_batches.append(batch)
+                            s_prime[i][j] = batch * rand
+                        j += 1
+                    i += 1
+
+            # move all the batches to the beginning of the solution sequence, i.e. all the way to the left.
+            s_prime = [[ele for ele in sub if ele != []] for sub in s_prime]
+
+            # 2a. choose repair operator (roulette)
+            repair_operator_choice = random.choices(list(repair_operators.keys()),
+                                                     weights=list(repair_operators.values()))
+            # 2b. repair
+            print(f'[ALNS-mixed][{it}] repairing solution ({repair_operator_choice})')
+            if repair_operator_choice == ['most_items_batch_first']:
+                # get item count for each of the destroyed batches
+                destroyed_batches_item_count_list = []
+                for batch in destroyed_batches:
+                    destroyed_batches_item_count_list.append(self.warehouseInstance.BatchesDF.loc[self.warehouseInstance.BatchesDF['Batch'].astype(str) == str(batch)]['ItemCount'].values[0])
+
+                # sort by item count descending
+                destroyed_batches = [x for _, x in sorted(zip(destroyed_batches_item_count_list, destroyed_batches))]
+                destroyed_batches.reverse()
+
+                # reassign batches to cobots, starting with the batch with the most items and the cobot with the least batches
+                for i in destroyed_batches:
+                    # find index of cobot with less items and assign the batch
+                    cobot_assign = s_prime.index(min(s_prime, key=len))
+                    s_prime[cobot_assign].append(i)
+
+            elif repair_operator_choice == ['fewest_items_batch_first']:
+                # get item count for each of the destroyed batches
+                destroyed_batches_item_count_list = []
+                for batch in destroyed_batches:
+                    destroyed_batches_item_count_list.append(self.warehouseInstance.BatchesDF.loc[
+                                                                 self.warehouseInstance.BatchesDF['Batch'].astype(
+                                                                     str) == str(batch)]['ItemCount'].values[0])
+
+                # sort by item count ascending
+                destroyed_batches = [x for _, x in sorted(zip(destroyed_batches_item_count_list, destroyed_batches))]
+
+                # reassign batches to cobots, starting with the batch with the most items and the cobot with the least batches
+                for i in destroyed_batches:
+                    # find index of cobot with less items and assign the batch
+                    cobot_assign = s_prime.index(min(s_prime, key=len))
+                    s_prime[cobot_assign].append(i)
+
+            elif repair_operator_choice == ['random_fill']:
+                #randomly shuffle elements of destroyed batches
+                random.shuffle(destroyed_batches)
+                # assign the batches to the cobots.
+                for i in destroyed_batches:
+                    # find index of cobot with less items and assign the batch
+                    cobot_assign = s_prime.index(min(s_prime, key=len))
+                    s_prime[cobot_assign].append(i)
 
 
-        # determine pod locations of items in destroyed batches?
-        # TODO: implement when have time
-            # self.warehouseInstance.choosePodLocation()
+            # 3. compare solutions and adapt operator weights
+            omega = [5, 1.5, 0.8, 0.5]
+            lmbda = 0.8
+            makespan_s_prime = self.calculateMakeSpan(s_prime)
+            if makespan_s_prime < self.calculateMakeSpan(s_star):
+                print(f'[ALNS-mixed][{i}][SUCCESS] found better solution ({makespan_s_prime})')
+                # update s_star
+                s_star = copy.deepcopy(s_prime)
+                # update weights
+                destroy_operators[destroy_operator_choice[0]] = (lmbda * destroy_operators[destroy_operator_choice[0]]) + (omega[0] * (1 - lmbda))
+                repair_operators[repair_operator_choice[0]] = (lmbda * repair_operators[repair_operator_choice[0]]) + (omega[0] * (1 - lmbda))
+            elif makespan_s_prime < self.calculateMakeSpan(s):
+                # update weights
+                destroy_operators[destroy_operator_choice[0]] = (lmbda * destroy_operators[destroy_operator_choice[0]]) + (omega[1] * (1 - lmbda))
+                repair_operators[repair_operator_choice[0]] = (lmbda * repair_operators[repair_operator_choice[0]]) + (omega[1] * (1 - lmbda))
+            elif makespan_s_prime < self.calculateMakeSpan(s_star)*1.5: # we accept s_prime only when its at max double the time of s_star, but its not a better solution
+                # update weights
+                destroy_operators[destroy_operator_choice[0]] = (lmbda * destroy_operators[destroy_operator_choice[0]]) + (omega[2] * (1 - lmbda))
+                repair_operators[repair_operator_choice[0]] = (lmbda * repair_operators[repair_operator_choice[0]]) + (omega[2] * (1 - lmbda))
+            else: # we dont accept s prime
+                # update weights
+                destroy_operators[destroy_operator_choice[0]] = (lmbda * destroy_operators[destroy_operator_choice[0]]) + (omega[4] * (1 - lmbda))
+                repair_operators[repair_operator_choice[0]] = (lmbda * repair_operators[repair_operator_choice[0]]) + (omega[4] * (1 - lmbda))
 
+            filename = 'Solutions/Task_3/ALNS/' + warehouse + '_' + str(round(makespan_s_prime)) + '_solution_taks3.2_greedy_heuristic_mixed_policy_adaptive_large_neighborhood.xml'
+            self.writeToXML(filename, s_prime)
 
-        # 2a. choose repair operator (roulette)
-        repair_operator_choice = random.choices(list(repair_operators.keys()),
-                                                 weights=list(repair_operators.values()))
-        # 2b. repair
-        if repair_operator_choice == 'most_items_batch_first':
-            # get item count for each of the destroyed batches
-            destroyed_batches_item_count_list = []
-            for batch in destroyed_batches:
-                destroyed_batches_item_count_list.append(self.warehouseInstance.BatchesDF.loc[self.warehouseInstance.BatchesDF['Batch'].astype(str) == str(batch)]['ItemCount'].values[0])
-
-            # sort by item count descending
-            destroyed_batches = [x for _, x in sorted(zip(destroyed_batches_item_count_list, destroyed_batches))]
-            destroyed_batches.reverse()
-
-            # reassign batches to cobots, starting with the batch with the most items and the cobot with the least batches
-            for i in destroyed_batches:
-                print(i)
-                # find index of cobot with less items and assign the batch
-                cobot_assign = s_prime.index(min(s_prime, key=len))
-                s_prime[cobot_assign].append(i)
-
-        elif repair_operator_choice == 'fewest_items_batch_first':
-            # get item count for each of the destroyed batches
-            destroyed_batches_item_count_list = []
-            for batch in destroyed_batches:
-                destroyed_batches_item_count_list.append(self.warehouseInstance.BatchesDF.loc[
-                                                             self.warehouseInstance.BatchesDF['Batch'].astype(
-                                                                 str) == str(batch)]['ItemCount'].values[0])
-
-            # sort by item count ascending
-            destroyed_batches = [x for _, x in sorted(zip(destroyed_batches_item_count_list, destroyed_batches))]
-
-            # reassign batches to cobots, starting with the batch with the most items and the cobot with the least batches
-            for i in destroyed_batches:
-                print(i)
-                # find index of cobot with less items and assign the batch
-                cobot_assign = s_prime.index(min(s_prime, key=len))
-                s_prime[cobot_assign].append(i)
-
-
-        elif repair_operator_choice == 'random_fill':
-            #randomly shuffle elements of destroyed batches
-            random.shuffle(destroyed_batches)
-            # assign the batches to the cobots.
-            for i in destroyed_batches:
-                print(i)
-                # find index of cobot with less items and assign the batch
-                cobot_assign = s_prime.index(min(s_prime, key=len))
-                s_prime[cobot_assign].append(i)
-
-
-        # 3. compare solutions and adapt operator weights
-        omega = [5, 1.5, 0.8, 0.5]
-        lmbda = 0.8
-        makespan_s_prime = self.calculateMakeSpan(s_prime)
-        if makespan_s_prime < self.calculateMakeSpan(s_star):
-            # update s_star
-            s_star = copy.deepcopy(s_prime)
-            # update weights
-            destroy_operators[destroy_operator_choice[0]] = (lmbda * destroy_operators[destroy_operator_choice[0]]) + (omega[0] * (1 - lmbda))
-            repair_operators[repair_operator_choice[0]] = (lmbda * repair_operators[repair_operator_choice[0]]) + (omega[0] * (1 - lmbda))
-        elif makespan_s_prime < self.calculateMakeSpan(s):
-            # update weights
-            destroy_operators[destroy_operator_choice[0]] = (lmbda * destroy_operators[destroy_operator_choice[0]]) + (omega[1] * (1 - lmbda))
-            repair_operators[repair_operator_choice[0]] = (lmbda * repair_operators[repair_operator_choice[0]]) + (omega[1] * (1 - lmbda))
-        elif makespan_s_prime < self.calculateMakeSpan(s_star)*2: # we accept s_prime only when its at max double the time of s_star, but its not a better solution
-            # update weights
-            destroy_operators[destroy_operator_choice[0]] = (lmbda * destroy_operators[destroy_operator_choice[0]]) + (omega[2] * (1 - lmbda))
-            repair_operators[repair_operator_choice[0]] = (lmbda * repair_operators[repair_operator_choice[0]]) + (omega[2] * (1 - lmbda))
-        else: # we dont accept s prime
-            # update weights
-            destroy_operators[destroy_operator_choice[0]] = (lmbda * destroy_operators[destroy_operator_choice[0]]) + (omega[4] * (1 - lmbda))
-            repair_operators[repair_operator_choice[0]] = (lmbda * repair_operators[repair_operator_choice[0]]) + (omega[4] * (1 - lmbda))
-
-        filename = 'Solutions/Task_3/ALNS/' + warehouse + '_' + str(round(makespan_s_prime)) + '_solution_taks3.2_greedy_heuristic_mixed_policy_adaptive_large_neighborhood.xml'
-        self.writeToXML(filename, s_prime)
-
-        # 5. iterate again with s_prime
+            # 5. iterate again with s_prime
 
 
 
@@ -858,7 +839,7 @@ class Demo():
 
 	# distance
     def initData(self):
-        print("[1] changing data format for the algorithm we used here: ")
+        print("[2] Changing data format for the algorithm we used here: ")
         warehouse_data_processing = WarehouseDateProcessing(self.warehouseInstance)
         #Distance d_ij between two nodes i,j \in V
         d_ij = warehouse_data_processing.CalculateDistance()
@@ -877,7 +858,7 @@ class Demo():
         ''':key
         method to collect the pod in which each item is located. can be adapoted for a mixed storage policy where items can be contained in multiple pods.
         '''
-        print("[3] Calculating pro Location for Items ")
+        print("[1] Calculating Pod Location for Items ")
 
         item_id_pod_id_dict = {} #initialize dictionary for item pod location
         for i in self.warehouseInstance.ItemDescriptions:
@@ -1174,16 +1155,6 @@ if __name__ == "__main__":
     filename = 'Solutions/Task_3/' + warehouse + '_' + str(round(makespan_mixed)) + '_solution_taks3_greedy_heuristic_mixed_policy.xml'
     _demo_mixed.writeToXML(filename, _demo_mixed.BatchAssignCobot_List)
 
-    _demo_mixed.alNeighborhood()
+    _demo_mixed.alNeighborhood(1000)
 
-    print(1)
-    [[1],[4,9],[0,6]], [[2,3,7],[8],[5]]
-
-
-
-
-    #[20,50,70,100],[250,270],[300,340]
-    #[30,60,80,120],[180,200],[230,260,330]
-
-    #[20,50]
-    #[30,60]
+    print('[END] Finished Calculating All Tasks')

@@ -719,7 +719,7 @@ class Warehouse:
         calculates the route and travel time of each batch, based on the batch and the output station
         :return: travel time and route
         '''
-        print("[3] Calculating Item List and Pod Locations for Batches")
+        print("[5] Calculating Item List and Pod Locations for Batches")
 
         AllBatchesItems = []
         AllBatchesItemsDict = []
