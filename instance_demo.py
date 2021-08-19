@@ -172,11 +172,6 @@ class Demo():
         else:
             self.is_storage_dedicated = False
 
-        #self.item_id_pod_id_dict = self.getPodforItems() FIXME: I think this is duplicate to the warehouse Attribute ItemPodLocations and can be deleted
-
-        #self.solution1 = self.initSolution()
-        #self.solution2 = self.initSolution()
-        #self.solution3 = self.initSolution()
 
     # warehouse instance
     def prepareData(self):
@@ -226,57 +221,6 @@ class Demo():
         print(f"[TIME] That is {len(self.warehouseInstance.BatchesDF)*len(self.warehouseInstance.OutputStations)} TSPs with {len(self.warehouseInstance.BatchesDF)*len(self.warehouseInstance.OutputStations)/time_tsp} TSPs per second")
 
 
-
-
-        # alternative way to work with dataframes and functions
-        # kw_df['kw_umlaute'] = kw_df.apply(lambda kw_df: reduce_umlaut(kw_df['kw_umlaute']), axis = 1)
-
-        ''' Fehlgeleitete Idee
-        ### zuerst orders an die packing stations assignen ###
-        # 1 first of all, we assign the order to the packing stations baes on weight.
-        self.assignOrdersToPackingStations()
-
-        # 2 then, we calculate a list of feasible batches of these orders inside the packing stations
-        for j in range(len(self.warehouseInstance.OutputStations)):
-            OutputStationKey = 'OutD' + str(j)
-            self.warehouseInstance.OutputStations[OutputStationKey].getFeasibleBatches()
-
-        # 3 pick a batch with greedy heuristic
-        for i in range(len(self.warehouseInstance.OutputStations)):
-            OutputStationKey = 'OutD' + str(j)
-            iter = 0
-            while self.warehouseInstance.OutputStations[OutputStationKey].feasibleBatches != []:
-
-                Batch = 0
-
-                # for the first iteration of batch assignment, we just chose any batch with
-                if iter == 0:
-                    # pick the first batch with just 1 item/order so that the packer starts working quickly.
-                    pass
-                else:
-                    # pick the first batch that has longer collection time than the packing time of the previous batch
-                    pass
-                    self.warehouseInstance.getItemsInBatch(['1', '2'], 'OutD0')
-
-                # feasibleBatches: remove all entries that contain fulfilledOrders
-                iter += 1
-
-
-
-        # 4 determine the visiting sequence for each cobot/pod
-
-        # 5 add the picked batch to the solution S
-        # remove all batches that contain the fulfilled orders
-
-
-
-        # calculate minim distance/time  (take from chans group) (decision metric for which batch to proicess)
-        #self.getTravelRoute()
-
-        print(1)
-        return self.solution1
-        '''
-
     # calcukating shortest paths for batches with TSP
     def shortestPathTSP(self, OutputStation):
         # input: packing station
@@ -284,9 +228,6 @@ class Demo():
         print("[7] Starting Calculation of shortest Routes with TSP")
 
         BotVelocity = 2  # dynamically draw this value from BotClass
-        PickerVelocity = 1.3  # picker speed
-        ItemPickingTime = 3  # dynamially draw this item from warehouse class
-
 
         AllChosenRoutes = []
         AllTravelTimes = []
@@ -316,10 +257,8 @@ class Demo():
             chosenTravelRoute = tsp(self.warehouseInstance.WarehouseGraph, nodes=stationsToVisit, method=tsp_method)
 
             TravelDistance = nx.classes.function.path_weight(self.warehouseInstance.WarehouseGraph, chosenTravelRoute, 'weight')
-            TravelTime =  TravelDistance / BotVelocity
-            #PickingTime = TravelTime + self.warehouseInstance.BatchesDF['ItemCount'][i] * ItemPickingTime
+            TotalRouteTime =  TravelDistance / BotVelocity
 
-            TotalRouteTime = TravelTime# + PickingTime
             ######################################################################
             AllChosenRoutes.append(chosenTravelRoute)
             AllTravelTimes.append(TotalRouteTime)
@@ -335,7 +274,7 @@ class Demo():
         self.warehouseInstance.BatchesDF[col_name_time] = AllTravelTimes
         self.warehouseInstance.BatchesDF[col_name_dist] = AllTravelDistances
         self.warehouseInstance.BatchesDF[col_name_time_per_order] = self.warehouseInstance.BatchesDF[col_name_time] / self.warehouseInstance.BatchesDF['OrderCount']
-        # TODO: work with this self.warehouseInstance.BatchesDF['ItemCount'][i] indexing instead of making columns to list and iterating over them.
+
 
     # using a greedy heuristic to find a solution to task 1
     def greedyHeuristic_T1(self):
@@ -364,9 +303,7 @@ class Demo():
         # Initialize table of feasible orders
         OrdersTable = self.warehouseInstance.BatchesDF[['Batch', 'travelTime_OutD0', 'travelTime_OutD1', 'travelTimeperOrder_OutD0', 'travelTimeperOrder_OutD1']]
 
-        ##### I could write this in a loop. If there's time
-        # First batch assignment
-
+        ### First batch assignment
         # Find batch with shortest time
         next_batch = OrdersTable.Batch[OrdersTable.travelTime_OutD0.idxmin()]
         next_batch_time = OrdersTable.travelTime_OutD0.min()
@@ -380,7 +317,7 @@ class Demo():
         dropping_rows = OrdersTable.Batch.apply(lambda x: any(item in next_batch for item in x))
         OrdersTable = OrdersTable[dropping_rows == False]
 
-        ### Do the exact same thing for cobot2
+        # Do the exact same thing for cobot2
         next_batch = OrdersTable.Batch[OrdersTable.travelTime_OutD1.idxmin()]
         next_batch_time = OrdersTable.travelTime_OutD1.min()
 
@@ -394,16 +331,8 @@ class Demo():
         OrdersTable = OrdersTable[dropping_rows == False]
 
         # The loop will continue to run until there are no feasible orders left. At each iteration the feasible orders will be reduced.
-        i = 0
         while len(OrdersTable) > 0:
             # Subset orders table into time columns
-            i += 1
-            print("Iteration", i)
-            print("Orders Left", OrdersTable)
-            print("Current Batch Assignments", BatchAssignCobot_List)
-            print("Cobot Times", TimeCobot_List)
-            print("Packer Times", TimePacker_List)
-
             batch_times = OrdersTable[['travelTimeperOrder_OutD0', 'travelTimeperOrder_OutD1']]
             # Find next available cobot
             next_available_cobot = TimeCobot_List.index(min(TimeCobot_List))
@@ -412,7 +341,6 @@ class Demo():
             next_batch_index = batch_times.iloc[:, next_available_cobot].idxmin()
             next_batch = OrdersTable.Batch[next_batch_index]
             next_batch_time = OrdersTable.loc[next_batch_index].iloc[next_available_cobot + 1]
-            print("next batch", next_batch)
             # Perform a check here! If its faster to send out the other cobot because the packer is still busy, then send the other cobot.
             completion_time1 = max(TimeCobot_List[next_available_cobot] + next_batch_time,
                                    TimePacker_List[next_available_cobot])
@@ -443,16 +371,9 @@ class Demo():
             dropping_rows = OrdersTable.Batch.apply(lambda x: any(item in next_batch for item in x))
             OrdersTable = OrdersTable[dropping_rows == False]
 
-
-        print(BatchAssignCobot_List)
-        print(TimeCobot_List)
-        print(TimePacker_List)
-
         self.BatchAssignCobot_List = BatchAssignCobot_List
         self.TimeCobot_List = TimeCobot_List
-        self.TimePacker_List = TimePacker_List  #TODO: could this be used as a makespan time? max(TimeCobot_List, TimePacker_List)
-        ### Yes the makespan is the time at which both packers are done packing the last orders, so
-        # makespan = max(TimePacker_List)
+        self.TimePacker_List = TimePacker_List
 
     # method to calculate the makespan of a proposed solution
     def calculateMakeSpan(self, batch_assignments):
@@ -483,9 +404,14 @@ class Demo():
             TimeCobots[cobot] += time
             Full_Route[cobot] = Full_Route[cobot][1:]
 
-        zone_occupied = 99999
-        zone_occ_time = []
-        zone_occ_last_item = 99999
+        picking_zone_list = []
+        zone_occupied = {}
+        for pod in self.warehouseInstance.Pods:
+            picking_zone = self.warehouseInstance.Pods[pod].PickingZone
+            if picking_zone not in picking_zone_list:
+                picking_zone_list.append(picking_zone)
+                zone_occupied[picking_zone] = {'occ_time':[99999,99999], 'last_item':99999}
+
 
         ##### This loop will run until both cobots have completed their orders
         # Each iteration of the loop starts (and ends) when a cobot has arrived in a NEW PICKING ZONE.
@@ -505,16 +431,22 @@ class Demo():
             current_cobot_zone = self.warehouseInstance.Pods[current_cobot_item].PickingZone
 
             ### Has the current cobot arrived in a picking zone where the picker is busy?
-            if current_cobot_zone == zone_occupied:
+            # Grad occupied details for current zone, and check if the zone has been occupied before. If it hasn't, there no need to check for waiting periods.
+            zone_occ_last_item = zone_occupied[current_cobot_zone]['last_item']
+            if zone_occ_last_item != 99999:
+                zone_occ_time = zone_occupied[current_cobot_zone]['occ_time']
                 # Calculate time for picker to walk from other cobot's last item to current cobot's first item
                 distance = self.warehouseInstance.distance_ij[tuple([str(zone_occ_last_item), current_cobot_item])]
                 time = distance / 1.3
                 zone_occ_time[1] += time
+                # If the cobot arrives while the picker is busy, it must wait.
                 if zone_occ_time[0] <= TimeCobots[current_cobot] <= zone_occ_time[1]:
                     TimeCobots[current_cobot] = max(TimeCobots[current_cobot], zone_occ_time[1])
 
-            zone_occupied = copy.deepcopy(current_cobot_zone)
-            zone_occ_time = [TimeCobots[current_cobot]]
+            # This picker is now busy with the current cobot. Overwrite the starting "occupied picker" time
+            zone_occupied[current_cobot_zone]['occ_time'][0] = TimeCobots[current_cobot]
+
+            # Find next item zone and continue to assist cobot until next zone changes
             if current_cobot_next_item in ['OutD0','OutD1']:
                 next_item_zone = 99999
             else:
@@ -531,8 +463,11 @@ class Demo():
                 else:
                     next_item_zone = self.warehouseInstance.Pods[current_cobot_next_item].PickingZone
 
-            zone_occ_time.append(TimeCobots[current_cobot] + 3)
-            zone_occ_last_item = Full_Route[current_cobot][0]
+            # The picker is finished after picking the last item for this cobot
+            zone_occupied[current_cobot_zone]['occ_time'][1] = (TimeCobots[current_cobot] + 3)
+            # Update the item that the picker finished at
+            zone_occupied[current_cobot_zone]['last_item'] = Full_Route[current_cobot][0]
+
             # send cobot to next zone
             distance = self.warehouseInstance.distance_ij[tuple(Full_Route[current_cobot][0:2])]
             time = 3 + (distance / 2)
@@ -557,25 +492,19 @@ class Demo():
                     time = 3 + (distance / 2)
                     TimeCobots[current_cobot] += time
                 Full_Route[current_cobot] = Full_Route[current_cobot][1:]
-
         return max(TimePackers)
 
     # simulated annealing algorithm for dedicated storeage policy
-    def saNeighborhood_T2(self, initialSolution, T = 100, alpha = 0.8):
+    def saNeighborhood_T2(self, initialSolution, T = 100, T_end = 10, alpha = 0.8):
         print("Start SA")
         s = initialSolution
         s_optimal = copy.deepcopy(s)
         makespan_s = self.calculateMakeSpan(s)
         makespan_s_optimal = copy.deepcopy(makespan_s)
-        print(makespan_s)
-
-        #T = 100
-        #alpha = 0.8
 
         i = 0
-        while T>10:
+        while T>T_end:
             i += 1
-            #print("Iteration", i)
             # randomly select a cobot
             cobot = int(np.random.randint(0, len(initialSolution), 1))
             other_cobot = int(bool(cobot)==False)
@@ -584,9 +513,6 @@ class Demo():
             dropped_batch = s[cobot][dropped_batch_index]
             s_prime = copy.deepcopy(s)
             s_prime[cobot].remove(dropped_batch)
-            #print("s= ", s)
-            #print("dropped_batch", dropped_batch)
-            #print("s_prime=", s_prime)
 
             # if the batch contains multiple orders, the orders may get split up
             possible_batches = []
@@ -612,26 +538,25 @@ class Demo():
                 # flip cobot so next batch gets assigned to other one
                 which_cobot = int(bool(which_cobot) == False)
             makespan_s_prime = self.calculateMakeSpan(s_prime)
-            #print("makespan_s", makespan_s)
-            #print("makespan_s_prime",makespan_s_prime)
+
             if (makespan_s_prime < makespan_s) or math.exp(-(makespan_s_prime-makespan_s)/T) > random.random():
                 s = copy.deepcopy(s_prime)
                 makespan_s = copy.deepcopy(makespan_s_prime)
             if makespan_s < makespan_s_optimal:
                 s_optimal = copy.deepcopy(s)
                 makespan_s_optimal = copy.deepcopy(makespan_s)
-            print("makespan_s_optimal", makespan_s_optimal)
+
             T = T*alpha
-            #print(T)
-            print(str(makespan_s) + ':   ' + str(s))
-            print(str(makespan_s_optimal) + ':   ' + str(s_optimal))
+
+            #print(str(makespan_s) + ':   ' + str(s))
+            #print(str(makespan_s_optimal) + ':   ' + str(s_optimal))
 
             filename = 'Solutions/Task_2/'  + warehouse + '_' + str(round(makespan_s)) + '_solution_taks2_simmulated_annealing_neighborhood.xml'
 
             _demo.writeToXML(filename, s)
         return makespan_s_optimal
 
-    # method that contains a pertubation strategy for task 2.4
+    # method that contains a pertubation strategy for task 2.3
     def perturbSA(self, iterations):
         overall_optimal = 10000000
         while iterations > 0:
@@ -658,7 +583,6 @@ class Demo():
             makespan_s_optimal = self.saNeighborhood_T2(BatchAssignCobot_List)
             if makespan_s_optimal < overall_optimal:
                 overall_optimal = copy.deepcopy(makespan_s_optimal)
-            #print("overall_optimal", overall_optimal)
             iterations -= 1
 
     # Adaptive Large Neighborhood Search in Mixed Storage Policy Warehouse
@@ -947,3 +871,6 @@ if __name__ == "__main__":
     _demo_mixed.alNeighborhood(100)
 
     print('[END] Finished Calculating All Tasks')
+    # Her optimal solution
+    # [[1],[4,9],[0,6]], [[2,3,7],[8],[5]]
+    #
