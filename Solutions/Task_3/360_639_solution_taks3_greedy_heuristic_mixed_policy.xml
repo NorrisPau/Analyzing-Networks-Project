@@ -1,0 +1,293 @@
+<?xml version='1.0' encoding='utf-8'?>
+<root>
+  <Collecting>
+    <Split>
+      <Bot ID="0">
+        <Batch ID="1">
+          <Orders>
+            <Order>OC0</Order>
+            <Order>OC2</Order>
+          </Orders>
+        </Batch>
+        <Batch ID="2">
+          <Orders>
+            <Order>OC3</Order>
+            <Order>OC6</Order>
+          </Orders>
+        </Batch>
+        <Batch ID="3">
+          <Orders>
+            <Order>OC5</Order>
+          </Orders>
+        </Batch>
+      </Bot>
+      <Bot ID="1">
+        <Batch ID="1">
+          <Orders>
+            <Order>OC4</Order>
+          </Orders>
+        </Batch>
+        <Batch ID="2">
+          <Orders>
+            <Order>OC1</Order>
+            <Order>OC7</Order>
+          </Orders>
+        </Batch>
+        <Batch ID="3">
+          <Orders>
+            <Order>OC9</Order>
+          </Orders>
+        </Batch>
+        <Batch ID="4">
+          <Orders>
+            <Order>OC8</Order>
+          </Orders>
+        </Batch>
+      </Bot>
+    </Split>
+    <Bots>
+      <Bot ID="0" collect="1" refill="-1">
+        <Batches>
+          <Batch BatchNumber="1" Distance="52.7">
+            <ItemsData>
+              <Orders>
+                <Order ID="OC1" />
+                <Order ID="OC2">
+                  <Item ID="C6_0" Pod="61" Type="darkred/a" />
+                  <Item ID="C5_0" Pod="42" Type="maroon/a" />
+                </Order>
+                <Order ID="OC3" />
+                <Order ID="OC4" />
+                <Order ID="OC5" />
+                <Order ID="OC6" />
+                <Order ID="OC7" />
+                <Order ID="OC8" />
+                <Order ID="OC9" />
+                <Order ID="OC10" />
+              </Orders>
+            </ItemsData>
+            <Edges>
+              <Edge StartNode="OutD0" EndNode="61" />
+              <Edge StartNode="61" EndNode="93" />
+              <Edge StartNode="93" EndNode="102" />
+              <Edge StartNode="102" EndNode="73" />
+              <Edge StartNode="73" EndNode="OutD0" />
+            </Edges>
+            <Waypoints />
+          </Batch>
+          <Batch BatchNumber="2" Distance="109.49999999999994">
+            <ItemsData>
+              <Orders>
+                <Order ID="OC1" />
+                <Order ID="OC2" />
+                <Order ID="OC3">
+                  <Item ID="C16_0" Pod="31" Type="seashell/a" />
+                  <Item ID="C0_0" Pod="56" Type="rosybrown/a" />
+                  <Item ID="C10_0" Pod="12" Type="tomato/a" />
+                  <Item ID="C5_0" Pod="42" Type="maroon/a" />
+                </Order>
+                <Order ID="OC4" />
+                <Order ID="OC5" />
+                <Order ID="OC6">
+                  <Item ID="C7_0" Pod="66" Type="red/a" />
+                  <Item ID="C12_0" Pod="43" Type="coral/a" />
+                  <Item ID="C11_0" Pod="36" Type="darksalmon/a" />
+                  <Item ID="C1_0" Pod="107" Type="lightcoral/a" />
+                  <Item ID="C9_0" Pod="47" Type="salmon/a" />
+                </Order>
+                <Order ID="OC7" />
+                <Order ID="OC8" />
+                <Order ID="OC9" />
+                <Order ID="OC10" />
+              </Orders>
+            </ItemsData>
+            <Edges>
+              <Edge StartNode="OutD0" EndNode="125" />
+              <Edge StartNode="125" EndNode="159" />
+              <Edge StartNode="159" EndNode="140" />
+              <Edge StartNode="140" EndNode="74" />
+              <Edge StartNode="74" EndNode="73" />
+              <Edge StartNode="73" EndNode="102" />
+              <Edge StartNode="102" EndNode="107" />
+              <Edge StartNode="107" EndNode="76" />
+              <Edge StartNode="76" EndNode="43" />
+              <Edge StartNode="43" EndNode="36" />
+              <Edge StartNode="36" EndNode="OutD0" />
+            </Edges>
+            <Waypoints />
+          </Batch>
+          <Batch BatchNumber="3" Distance="61.39999999999999">
+            <ItemsData>
+              <Orders>
+                <Order ID="OC1" />
+                <Order ID="OC2" />
+                <Order ID="OC3" />
+                <Order ID="OC4" />
+                <Order ID="OC5">
+                  <Item ID="C7_0" Pod="66" Type="red/a" />
+                  <Item ID="C0_0" Pod="56" Type="rosybrown/a" />
+                  <Item ID="C18_0" Pod="92" Type="saddlebrown/a" />
+                  <Item ID="C5_0" Pod="42" Type="maroon/a" />
+                  <Item ID="C3_0" Pod="50" Type="brown/a" />
+                  <Item ID="C4_0" Pod="69" Type="firedbrick/a" />
+                </Order>
+                <Order ID="OC6" />
+                <Order ID="OC7" />
+                <Order ID="OC8" />
+                <Order ID="OC9" />
+                <Order ID="OC10" />
+              </Orders>
+            </ItemsData>
+            <Edges>
+              <Edge StartNode="OutD0" EndNode="159" />
+              <Edge StartNode="159" EndNode="130" />
+              <Edge StartNode="130" EndNode="73" />
+              <Edge StartNode="73" EndNode="101" />
+              <Edge StartNode="101" EndNode="69" />
+              <Edge StartNode="69" EndNode="66" />
+              <Edge StartNode="66" EndNode="65" />
+              <Edge StartNode="65" EndNode="OutD0" />
+            </Edges>
+            <Waypoints />
+          </Batch>
+        </Batches>
+      </Bot>
+      <Bot ID="1" collect="1" refill="-1">
+        <Batches>
+          <Batch BatchNumber="1" Distance="54.59999999999997">
+            <ItemsData>
+              <Orders>
+                <Order ID="OC1" />
+                <Order ID="OC2" />
+                <Order ID="OC3" />
+                <Order ID="OC4">
+                  <Item ID="C14_0" Pod="122" Type="lightsalmon/a" />
+                  <Item ID="C13_0" Pod="89" Type="orangered/a" />
+                  <Item ID="C0_0" Pod="56" Type="rosybrown/a" />
+                </Order>
+                <Order ID="OC5" />
+                <Order ID="OC6" />
+                <Order ID="OC7" />
+                <Order ID="OC8" />
+                <Order ID="OC9" />
+                <Order ID="OC10" />
+              </Orders>
+            </ItemsData>
+            <Edges>
+              <Edge StartNode="OutD1" EndNode="178" />
+              <Edge StartNode="178" EndNode="56" />
+              <Edge StartNode="56" EndNode="OutD1" />
+            </Edges>
+            <Waypoints />
+          </Batch>
+          <Batch BatchNumber="2" Distance="120.29999999999993">
+            <ItemsData>
+              <Orders>
+                <Order ID="OC1">
+                  <Item ID="C9_0" Pod="47" Type="salmon/a" />
+                  <Item ID="C12_0" Pod="43" Type="coral/a" />
+                  <Item ID="C14_0" Pod="122" Type="lightsalmon/a" />
+                  <Item ID="C18_0" Pod="92" Type="saddlebrown/a" />
+                  <Item ID="C16_0" Pod="31" Type="seashell/a" />
+                </Order>
+                <Order ID="OC2" />
+                <Order ID="OC3" />
+                <Order ID="OC4" />
+                <Order ID="OC5" />
+                <Order ID="OC6" />
+                <Order ID="OC7">
+                  <Item ID="C4_0" Pod="69" Type="firedbrick/a" />
+                  <Item ID="C17_0" Pod="64" Type="chocolate/a" />
+                  <Item ID="C12_0" Pod="43" Type="coral/a" />
+                </Order>
+                <Order ID="OC8" />
+                <Order ID="OC9" />
+                <Order ID="OC10" />
+              </Orders>
+            </ItemsData>
+            <Edges>
+              <Edge StartNode="OutD1" EndNode="160" />
+              <Edge StartNode="160" EndNode="159" />
+              <Edge StartNode="159" EndNode="125" />
+              <Edge StartNode="125" EndNode="103" />
+              <Edge StartNode="103" EndNode="102" />
+              <Edge StartNode="102" EndNode="69" />
+              <Edge StartNode="69" EndNode="43" />
+              <Edge StartNode="43" EndNode="14" />
+              <Edge StartNode="14" EndNode="OutD1" />
+            </Edges>
+            <Waypoints />
+          </Batch>
+          <Batch BatchNumber="3" Distance="89.29999999999995">
+            <ItemsData>
+              <Orders>
+                <Order ID="OC1" />
+                <Order ID="OC2" />
+                <Order ID="OC3" />
+                <Order ID="OC4" />
+                <Order ID="OC5" />
+                <Order ID="OC6" />
+                <Order ID="OC7" />
+                <Order ID="OC8" />
+                <Order ID="OC9">
+                  <Item ID="C1_0" Pod="107" Type="lightcoral/a" />
+                  <Item ID="C16_0" Pod="31" Type="seashell/a" />
+                  <Item ID="C2_0" Pod="64" Type="indiaread/a" />
+                  <Item ID="C11_0" Pod="36" Type="darksalmon/a" />
+                  <Item ID="C4_0" Pod="69" Type="firedbrick/a" />
+                </Order>
+                <Order ID="OC10" />
+              </Orders>
+            </ItemsData>
+            <Edges>
+              <Edge StartNode="OutD1" EndNode="237" />
+              <Edge StartNode="237" EndNode="196" />
+              <Edge StartNode="196" EndNode="175" />
+              <Edge StartNode="175" EndNode="269" />
+              <Edge StartNode="269" EndNode="295" />
+              <Edge StartNode="295" EndNode="OutD1" />
+            </Edges>
+            <Waypoints />
+          </Batch>
+          <Batch BatchNumber="4" Distance="122.89999999999995">
+            <ItemsData>
+              <Orders>
+                <Order ID="OC1" />
+                <Order ID="OC2" />
+                <Order ID="OC3" />
+                <Order ID="OC4" />
+                <Order ID="OC5" />
+                <Order ID="OC6" />
+                <Order ID="OC7" />
+                <Order ID="OC8">
+                  <Item ID="C16_0" Pod="31" Type="seashell/a" />
+                  <Item ID="C10_0" Pod="12" Type="tomato/a" />
+                  <Item ID="C13_0" Pod="89" Type="orangered/a" />
+                  <Item ID="C17_0" Pod="64" Type="chocolate/a" />
+                  <Item ID="C7_0" Pod="66" Type="red/a" />
+                  <Item ID="C0_0" Pod="56" Type="rosybrown/a" />
+                  <Item ID="C18_0" Pod="92" Type="saddlebrown/a" />
+                  <Item ID="C3_0" Pod="50" Type="brown/a" />
+                </Order>
+                <Order ID="OC9" />
+                <Order ID="OC10" />
+              </Orders>
+            </ItemsData>
+            <Edges>
+              <Edge StartNode="OutD1" EndNode="237" />
+              <Edge StartNode="237" EndNode="193" />
+              <Edge StartNode="193" EndNode="247" />
+              <Edge StartNode="247" EndNode="300" />
+              <Edge StartNode="300" EndNode="337" />
+              <Edge StartNode="337" EndNode="307" />
+              <Edge StartNode="307" EndNode="309" />
+              <Edge StartNode="309" EndNode="352" />
+              <Edge StartNode="352" EndNode="OutD1" />
+            </Edges>
+            <Waypoints />
+          </Batch>
+        </Batches>
+      </Bot>
+    </Bots>
+  </Collecting>
+</root>

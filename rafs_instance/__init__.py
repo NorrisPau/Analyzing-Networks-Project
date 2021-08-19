@@ -385,8 +385,6 @@ class Warehouse:
 
         self.ItemPodLocations = self.getPodsforItems()
 
-
-    ######################### start functions #########################
     #Import functions
     #Import layout functions
     def ImportLayout(self, file): 
@@ -660,7 +658,6 @@ class Warehouse:
         self.Orders = allOrders
         self.ItemBundles = itemBundles
 
-    ######################### start functions end #########################
 
     # getting a list and dataframe of feasible batches of open orders in the warehouse
     def getFeasibleBatches(self): # returns: Dict{batchID, List[Orders]}:
@@ -690,8 +687,6 @@ class Warehouse:
         self.BatchesDF.set_index('Batch')
 
         print(f"[4_1] Number of feasible Batches: {len(feasibleBatchesList)}")
-
-
 
     # generates a dictionary that contains a list of pod locations for each item.
     def getPodsforItems(self):
@@ -787,6 +782,7 @@ class Warehouse:
         # collecting all information in dataframe
         #batchItemsDF = pd.DataFrame({'items':ItemsDict.keys(), 'quantity':ItemsDict.values(), 'ItemPodID':ItemPodID.values(), 'PodID': PodID.values()})
 
+    # chooses pod location in a mixed shelves storage policy based on a greedy heuristic
     def choosePodLocation(self, ItemPodID):
 
         chosenPath = []
@@ -816,7 +812,7 @@ class Warehouse:
 
         return chosenPath
 
-
+    # assigns each pod to a picking zone / zoom
     def getPodZones(self):
         podYlocations = {}
         pickingZones = {}       # init pickingZones dict
@@ -848,6 +844,7 @@ class Warehouse:
             distinctYlocations.pop(0)
             PickingZone += 1
         self.PickingZones = pickingZones
+
 
 #Warehouse class, that holds all information about the warehouse
 class WarehouseLite:

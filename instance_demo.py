@@ -26,7 +26,8 @@ import copy
 import random
 import sys
 
-warehouse = '24'
+# setting the warehouse (small:24, large:360)
+warehouse = '360'
 
 if warehouse == '360':
     layoutFile = r'data/layout/1-1-1-2-1.xlayo'
@@ -43,7 +44,6 @@ if warehouse == '360':
     orders = {}
     orders['10_5'] = r'data/sku360/orders_10_mean_5_sku_360.xml'
     #orders['20_5'] = r'data/sku360/orders_20_mean_5_sku_360.xml'
-
 else:
     warehouse = '24'
     layoutFile = r'data/layout/1-1-1-2-1.xlayo'
@@ -60,8 +60,6 @@ else:
     orders = {}
     orders['10_5']=r'data/sku24/orders_10_mean_5_sku_24.xml'
     #orders['20_5']=r'data/sku24/orders_20_mean_5_sku_24.xml'
-
-
 
 class WarehouseDateProcessing():
     def __init__(self, warehouseInstance, batch_size = None):
@@ -160,22 +158,6 @@ class WarehouseDateProcessing():
 
         return d_ij
 
-
-class Solution():
-    def __init__(self):
-        # TODO: read the solution template file and use their structure for the solution class
-        # figure out how to do this from their case or package
-        solutionTemplateFile = r'log_example.xml'
-
-        tree = ET.parse(solutionTemplateFile)
-        root = tree.getroot()
-
-        with open(solutionTemplateFile, 'r') as f:
-            xmlTemplate = f.read()
-
-        self.solution = untangle.parse(xmlTemplate)
-
-
 class Demo():
     def __init__(self, splitOrders = False):
 
@@ -196,6 +178,29 @@ class Demo():
         #self.solution2 = self.initSolution()
         #self.solution3 = self.initSolution()
 
+    # warehouse instance
+    def prepareData(self):
+        print("[0] preparing all data with the standard format: ")
+        # Every instance
+        for key, instanceFile in instances.items():
+            podAmount = key[0]
+            depotAmount = key[1]
+            # For different orders
+            for key, orderFile in orders.items():
+                orderAmount = key
+                # For storage policies
+                for storagePolicy, storagePolicyFile in storagePolicies.items():
+                    warehouseInstance = instance.Warehouse(layoutFile, instanceFile, podInfoFile, storagePolicyFile,
+                                                           orderFile)
+        return warehouseInstance
+
+    # distance
+    def initData(self):
+        print("[2] Changing data format for the algorithm we used here: ")
+        warehouse_data_processing = WarehouseDateProcessing(self.warehouseInstance)
+        # Distance d_ij between two nodes i,j \in V
+        d_ij = warehouse_data_processing.CalculateDistance()
+        return d_ij
 
     # preparing the warehouse information
     def prepareWarehouseInformation(self, storagePolicy='dedicated'):
@@ -332,8 +337,6 @@ class Demo():
         self.warehouseInstance.BatchesDF[col_name_time_per_order] = self.warehouseInstance.BatchesDF[col_name_time] / self.warehouseInstance.BatchesDF['OrderCount']
         # TODO: work with this self.warehouseInstance.BatchesDF['ItemCount'][i] indexing instead of making columns to list and iterating over them.
 
-
-
     # using a greedy heuristic to find a solution to task 1
     def greedyHeuristic_T1(self):
         # Assumption: there are only 2 packing station and 2 cobots. This is consistent with both 24 and 360 layouts
@@ -451,45 +454,7 @@ class Demo():
         ### Yes the makespan is the time at which both packers are done packing the last orders, so
         # makespan = max(TimePacker_List)
 
-    """ ## old makespan method
-    def calculateMakeSpan(self, batch_assignments):
-
-        OrdersTable = self.warehouseInstance.BatchesDF[
-            ['Batch', 'travelTime_OutD0', 'travelTime_OutD1']]
-        # The cobot/packer times will be calculated seperately for each cobot. The outer loop cyles through each cobot
-        # the inner loop cycles through assigned batches
-        TimePacker_List = []
-        for cobot in range(len(batch_assignments)):
-            i = 0
-            for batch in batch_assignments[cobot]:
-                i += 1
-                # Get the time it takes to complete the next batch
-                #print(OrdersTable)
-                batchTime = int(OrdersTable.iloc[:,cobot+1][OrdersTable.Batch.apply(lambda x: x == batch)])
-                # for the first iteration (batch) of each cobot, we need to reinitialize the times
-                if i == 1:
-                    TimeCobot = 30
-                    TimePacker = 30
-                    TimeCobot += batchTime + 20
-                    TimePacker += batchTime + 20 + 60 * len(batch)
-                # all other iterations go through here. We add time in a similar manner to the greedy algorithm
-                else:
-                    TimeCobot += batchTime
-                    # cobot and packer must wait until both are read
-                    TimeCobot = max(TimeCobot,TimePacker)
-                    TimePacker = max(TimeCobot,TimePacker)
-
-                    # Now that both are ready, add time to unpack
-                    TimeCobot += 20
-
-                    # The packer also adds the unload time, and also packing time for each item
-                    TimePacker += 20 + 60 * len(batch)
-            TimePacker_List.append(TimePacker)
-
-        makespan = max(TimePacker_List)
-        return makespan
-    """
-
+    # method to calculate the makespan of a proposed solution
     def calculateMakeSpan(self, batch_assignments):
 
         OrdersTable = self.warehouseInstance.BatchesDF[
@@ -595,6 +560,7 @@ class Demo():
 
         return max(TimePackers)
 
+    # simulated annealing algorithm for dedicated storeage policy
     def saNeighborhood_T2(self, initialSolution, T = 100, alpha = 0.8):
         print("Start SA")
         s = initialSolution
@@ -818,41 +784,6 @@ class Demo():
 
             # 5. iterate again with s_prime
 
-
-
-
-    ######################### start functions #########################
-	# warehouse instance
-    def prepareData(self):
-        print("[0] preparing all data with the standard format: ")
-        #Every instance
-        for key, instanceFile in instances.items():
-            podAmount = key[0]
-            depotAmount = key[1]
-            #For different orders
-            for key, orderFile in orders.items():
-                orderAmount = key
-                #For storage policies
-                for storagePolicy, storagePolicyFile in storagePolicies.items():
-                    warehouseInstance = instance.Warehouse(layoutFile, instanceFile, podInfoFile, storagePolicyFile, orderFile)
-        return warehouseInstance
-
-	# distance
-    def initData(self):
-        print("[2] Changing data format for the algorithm we used here: ")
-        warehouse_data_processing = WarehouseDateProcessing(self.warehouseInstance)
-        #Distance d_ij between two nodes i,j \in V
-        d_ij = warehouse_data_processing.CalculateDistance()
-        return d_ij
-
-    ######################### start functions #########################
-
-    # initlaize solution xml struncture as class object.
-    def initSolution(self):
-        print("[2] initializing solution class")
-        solution = Solution()
-        return solution
-
     # generate ItemID - PodLocation dictionary.
     def getPodforItems(self):   # TODO: dstinguish mixed and dedicated storage policy)1
         ''':key
@@ -898,6 +829,7 @@ class Demo():
 
     # writes the solution to a xml file in the desired structure
     def writeToXML(self, filename, BatchAssignCobot_List):
+        print("[XX] Exporting Solution to XML file")
         # base element
         root = ET.Element("root")
         # first section "split" contains information about which orders are in which batches, and which batches are assigned to which station (=bot)
@@ -974,152 +906,6 @@ class Demo():
 
 
 
-
-    #currently unused:
-    def getTravelRouteofBatch(self):#, Batch, OutputStation):
-        '''
-        calculates the route and travel time of each batch, based on the batch and the output station
-        :return: travel time and route
-        '''
-        #INPUTS:
-        Batch = [1,2]       ## draw this from function call
-        OutputStation = 'OutD0' #'OutD1' ## draw this from function call
-
-        # get list of order of items in batch
-        itemsInBatch = []
-        for i in Batch:     # the orders in batch
-            for j in self.warehouseInstance.Orders[i].Positions:
-                itemsInBatch.append(self.warehouseInstance.Orders[i].Positions[str(j)])
-
-        # accumulate items
-        ItemsDict = {}
-        for j in itemsInBatch:
-            ItemsDict[j.ItemDescID] = 0
-        for k in itemsInBatch:
-            ItemsDict[k.ItemDescID] = int(ItemsDict[k.ItemDescID]) + int(k.Count)
-
-        # get ItemPodID for ItemID
-        ItemPodID = {}
-        for i in ItemsDict:
-            ItemPodID[i] = self.warehouseInstance.ItemDescriptions[i].ItemPodID
-
-        # get the pod ID for each Item
-        PodID = {}
-        for i in ItemsDict:
-            PodID[i] = self.warehouseInstance.ItemPodLocations[ItemPodID[i]]
-
-        # collecting all information in dataframe
-        batchItemsDF = pd.DataFrame({'items':ItemsDict.keys(), 'quantity':ItemsDict.values(), 'ItemPodID':ItemPodID.values(), 'PodID': PodID.values()})
-
-
-        # generating a list of nodes to be visited, with the starting/ending node in the first list position
-        # this will be used as an inout to the networkx tsp algorithm
-        # generally, it would be possible to make one list for each outputStation and compare the time of traveling sequence
-        # that is given my the TSP algo of NX.
-        stationsToVisit = [item for elem in list(PodID.values()) for item in elem]
-        stationsToVisit.insert(0, OutputStation)
-
-        ################################################################################################
-        ################################################################################################
-        # Generating a network from the pods/stations and distances
-        G = nx.Graph()
-        # adding all nodes and edges to the network graph
-        all_nodes = list(self.warehouseInstance.OutputStations) + list(self.warehouseInstance.Pods)
-        G.add_nodes_from(all_nodes)
-        G.add_edges_from(self.distance_ij)     ## weighted edged are taken in the format [[1,2,666],[2,3,5565],[],[],[]]
-        # setting the edges weights.
-        nx.set_edge_attributes(G, values=self.distance_ij, name='weight')
-
-        ## checking some propeties of the G graph, can be deleted later.
-        # TODO: delete
-        len(self.distance_ij)
-        G.number_of_edges()
-        G.number_of_nodes()
-        G.nodes['1']
-
-        G.edges['1', 'OutD1']
-        G.edges['OutD1', '1']
-
-        G.edges['OutD1', '1']
-        G.edges['1', '2']
-        G.edges['2', 'OutD1']
-
-        G.edges['2', '2']
-
-
-        G['4']['5']["weight"]
-
-        nx.draw(G, with_labels = True)
-        plt.savefig("network_img1.png")
-
-        nx.is_connected(G) ## has to be true always
-        #### TODO: delete until here
-
-
-
-        ################################################################################################
-        ##################################   TSP from NetworkX   #######################################
-        ################################################################################################
-        SA_tsp = approximation.traveling_salesman.simulated_annealing_tsp
-        tsp = approximation.traveling_salesman.traveling_salesman_problem
-
-        tsp_method = lambda G, wt: SA_tsp(G, "greedy", weight=wt, temp=500)
-        chosenTravelRoute = tsp(G, nodes=stationsToVisit, method=tsp_method)
-        ################################################################################################
-        ################################################################################################
-
-        # TODO: Test TSP algorithm with various sequences of stations to visit
-        # TODO: write the chosen route to the feasibleBatches dataframe as an entry in a dedicated column for each output station
-
-        # calculating the travel time of the chosen Route # in
-        BotVelocity = 2         # dynamically draw this value from BotClass
-        PickerVelocity = 1.3    # picker speed
-        ItemPickingTime = 3     # dynamially draw this item from warehouse class
-        TravelTime = nx.classes.function.path_weight(G, chosenTravelRoute, 'weight') / BotVelocity
-        PickingTime = TravelTime + batchItemsDF['quantity'].sum() * ItemPickingTime
-
-        TotalRouteTime = TravelTime + PickingTime
-
-
-        self.TravelRoute = chosenTravelRoute
-        self.TravelRouteTime = TotalRouteTime
-    def getPackingTimeofBatch(self):#, #ofOrdersinBatch):
-        # calculates time needed for packing a batch of orers at the OutputStation
-        unloadCobot = 20        # per batch
-
-        packingOrder = 60       # per order, 60seconds to pack
-
-        prepCobot = 30          # per batch (only once at the beginning, add 30seconds to total time)
-
-        self.PackingTime = 1
-    def assignOrdersToPackingStations(self):
-        '''
-        This heuristic assigns orders to Packing Stations while trying to balance total weight between the stations.
-        Improvements: Find a way to assign Order not only on weight but through a combination of weight and number of orders,
-        so that several very heavy orders cannot skew the distribution, which would risk having one station idle for too long.
-        '''
-        for i in range(len(self.warehouseInstance.openOrders)):
-            # assign the first order to any packing station (here we just take the first one)
-            if i == 0:
-                self.warehouseInstance.OutputStations['OutD0'].Queues.append(self.warehouseInstance.openOrders[i])
-                self.warehouseInstance.OutputStations['OutD0'].UpdateWeight()
-            #otherwise, assign the outut station with the smalles totalWeight of so far assigned Orders.
-            else:
-                # find station with lowest weight
-                LowestWeightOutputStationWeight = 9999999
-                LowestWeightOutputStationKey = ''
-                for j in range(len(self.warehouseInstance.OutputStations)):
-                    OutputStationDictKey = 'OutD' + str(j)
-                    if self.warehouseInstance.OutputStations[OutputStationDictKey].totalWeight <= LowestWeightOutputStationWeight:
-                        LowestWeightOutputStationKey = OutputStationDictKey
-                        LowestWeightOutputStationWeight = self.warehouseInstance.OutputStations[OutputStationDictKey].totalWeight
-                # assign order to that station
-                self.warehouseInstance.OutputStations[LowestWeightOutputStationKey].Queues.append(self.warehouseInstance.openOrders[i])
-                self.warehouseInstance.OutputStations[LowestWeightOutputStationKey].UpdateWeight()
-
-
-
-
 if __name__ == "__main__":
 
     # preparing warehouse attributes like network graph, batching, orders dataframes etc.
@@ -1143,8 +929,10 @@ if __name__ == "__main__":
     #################### MIXED ###################
     ## develop eveything for a mixed storage policy
     storagePolicies = {}
-    storagePolicies['mixed'] = 'data/sku24/pods_items_mixed_shevels_1-5.txt'
-    # storagePolicies['mixed'] = 'data/sku360/pods_items_mixed_shevels_1-5.txt'
+    if warehouse == '360':
+        storagePolicies['mixed'] = 'data/sku360/pods_items_mixed_shevels_1-5.txt'
+    else:
+        storagePolicies['mixed'] = 'data/sku24/pods_items_mixed_shevels_1-5.txt'
 
     _demo_mixed = Demo()
     _demo_mixed.prepareWarehouseInformation('mixed')
@@ -1155,6 +943,7 @@ if __name__ == "__main__":
     filename = 'Solutions/Task_3/' + warehouse + '_' + str(round(makespan_mixed)) + '_solution_taks3_greedy_heuristic_mixed_policy.xml'
     _demo_mixed.writeToXML(filename, _demo_mixed.BatchAssignCobot_List)
 
-    _demo_mixed.alNeighborhood(1000)
+    # Task 3.2 Adaptive Large Neighborhood search for mixed policy warehouse
+    _demo_mixed.alNeighborhood(100)
 
     print('[END] Finished Calculating All Tasks')
