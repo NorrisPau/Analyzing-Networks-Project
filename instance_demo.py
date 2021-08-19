@@ -67,30 +67,20 @@ class WarehouseDateProcessing():
         self._InitSets(warehouseInstance, batch_size)
 
     def preprocessingFilterPods(self, warehouseInstance):
-
         resize_pods = {}
-        #print("preprocessingFilterPods")
         item_id_list=[]
         for order in warehouseInstance.Orders:
             for pos in order.Positions.values():
                 item = warehouseInstance.ItemDescriptions[pos.ItemDescID].Color.lower() + '/' + warehouseInstance.ItemDescriptions[pos.ItemDescID].Letter
-                #item_id = pos.ItemDescID
                 if item not in item_id_list:
                     item_id_list.append(item)
-                    #print(item_id)
-
-        #for item in item_id_list:
-        #    print(item)
 
         # for dedicated
         for pod in warehouseInstance.Pods.values():
             for item in pod.Items:
-                #print("item in pod.Items:", item.ID)
                 if item.ID in item_id_list:
-                    #print("item.ID in item_id_list:", item.ID)
                     resize_pods[pod.ID] = pod
 
-        #print(resize_pods)
         return resize_pods
 
     # Initialize sets and parameters
