@@ -37,8 +37,8 @@ if warehouse == '360':
     instances[360, 2] = r'data/sku360/layout_sku_360_2.xml'
 
     storagePolicies = {}
-    #storagePolicies['dedicated'] = 'data/sku360/pods_items_dedicated_1.txt'
-    storagePolicies['mixed'] = 'data/sku24/pods_items_mixed_shevels_1-5.txt' # TODO: make it possible to change sotorage policy by way of passing an argument, not commenting this line.
+    storagePolicies['dedicated'] = 'data/sku360/pods_items_dedicated_1.txt'
+    #storagePolicies['mixed'] = 'data/sku360/pods_items_mixed_shevels_1-5.txt' # TODO: make it possible to change sotorage policy by way of passing an argument, not commenting this line.
 
     orders = {}
     orders['10_5'] = r'data/sku360/orders_10_mean_5_sku_360.xml'
@@ -198,14 +198,14 @@ class Demo():
 
 
     # preparing the warehouse information
-    def prepareWarehouseInformation(self):
+    def prepareWarehouseInformation(self, storagePolicy='dedicated'):
         timer_start = time.time()
 
         # calculates all feasible batches of the given orders
         self.warehouseInstance.getFeasibleBatches()
 
         # calculates the items and pod locations for all the batches and writes it to BatchesDF
-        self.warehouseInstance.getItemPodsBatchDF()
+        self.warehouseInstance.getItemPodsBatchDF(storagePolicy)
         self.warehouseInstance.getPodZones()
 
         # generates a Graph of the Warehouse to be used in traveling salesman probelem.
@@ -312,9 +312,9 @@ class Demo():
 
             TravelDistance = nx.classes.function.path_weight(self.warehouseInstance.WarehouseGraph, chosenTravelRoute, 'weight')
             TravelTime =  TravelDistance / BotVelocity
-            PickingTime = TravelTime + self.warehouseInstance.BatchesDF['ItemCount'][i] * ItemPickingTime
+            #PickingTime = TravelTime + self.warehouseInstance.BatchesDF['ItemCount'][i] * ItemPickingTime
 
-            TotalRouteTime = TravelTime + PickingTime
+            TotalRouteTime = TravelTime# + PickingTime
             ######################################################################
             AllChosenRoutes.append(chosenTravelRoute)
             AllTravelTimes.append(TotalRouteTime)
@@ -450,7 +450,8 @@ class Demo():
         self.TimePacker_List = TimePacker_List  #TODO: could this be used as a makespan time? max(TimeCobot_List, TimePacker_List)
         ### Yes the makespan is the time at which both packers are done packing the last orders, so
         # makespan = max(TimePacker_List)
-    """
+
+    """ ## old makespan method
     def calculateMakeSpan(self, batch_assignments):
 
         OrdersTable = self.warehouseInstance.BatchesDF[
@@ -659,11 +660,12 @@ class Demo():
             print(str(makespan_s) + ':   ' + str(s))
             print(str(makespan_s_optimal) + ':   ' + str(s_optimal))
 
-            filename = 'Solutions/Task_2/'  + warehouse + '_' + str(makespan_s) + '_solution_taks2_simmulated_annealing_neighborhood.xml'
+            filename = 'Solutions/Task_2/'  + warehouse + '_' + str(round(makespan_s)) + '_solution_taks2_simmulated_annealing_neighborhood.xml'
 
             _demo.writeToXML(filename, s)
         return makespan_s_optimal
 
+    # method that contains a pertubation strategy for task 2.4
     def perturbSA(self, iterations):
         overall_optimal = 10000000
         while iterations > 0:
@@ -693,11 +695,150 @@ class Demo():
             #print("overall_optimal", overall_optimal)
             iterations -= 1
 
+    #
+    def alNeighborhood(self):
+        # different solutions given in the FullBatchAssignment format, so that we can calculate the makespan on them)
+        # s         initial solution (from task 3.1)
+        # s_prime   candiate solution (after destroy and repair)
+        # s_star    best solution (result of comparison between s and s_prime)
+        s = self.BatchAssignCobot_List
+        s_prime = copy.deepcopy(s)
+        s_star = copy.deepcopy(s)
 
-    def greedyHeuristic_MixedPolicy_T3(self):
 
 
-        pass
+        # 0. destroy operator set
+        destroy_operators = {'random_batch_subset': 1,'random_cobot': 1}
+
+        # 0. repair operator set
+        repair_operators = {'most_items_batch_first': 1, 'fewest_items_batch_first': 1, 'random_fill': 1}
+
+        # 1a. choose destroy operator (roulette)
+        destroy_operator_choice = random.choices(list(destroy_operators.keys()),
+                                                 weights=list(destroy_operators.values()))
+
+        # 1b. destroy
+        if destroy_operator_choice == 'random_cobot':
+            # choose random cobot and destroy all batches assigned to that cobot, append destroyed batches to the desotryed batches list
+            random_cobot = int(np.random.randint(0, 2, 1))
+            destroyed_batches = s_prime[random_cobot]
+            s_prime[random_cobot] = []
+        elif destroy_operator_choice == 'random_batch_subset':
+            # destroy each batch with probability of 0.5 and append the destroyed batch to the destroyed batches list
+            destroyed_batches = []
+            i = 0
+            for cobot in s_prime:
+                j = 0
+                for batch in cobot:
+                    rand = int(np.random.randint(0, 2, 1))
+                    if rand == 0:
+                        destroyed_batches.append(batch)
+                        s_prime[i][j] = batch * rand
+                    j += 1
+                i += 1
+
+
+        # move all the batches to the beginning of the solution sequence
+        # we do not sort the destroyed solution, but puzrge the empty elemtsn and then when assigning,
+        # always assign to the cobot with less items in its list
+        # for i in range(len(s_prime)):
+        #    s_prime[i].sort(key=len, reverse=True)
+        # purge empty elements from list
+        s_prime = [[ele for ele in sub if ele != []] for sub in s_prime]
+
+        # TODO: order the list in a different way, i.e. shortest first, OR just empty elemts to the right.
+        # for i in range(len(s_prime)):
+        #    for j in range(len(s_prime[i])):
+        #        if len(s_prime[i][j]) > 0:
+        #            s_prime_sorted[i][j] =
+
+
+        # determine pod locations of items in destroyed batches?
+        # TODO: implement when have time
+            # self.warehouseInstance.choosePodLocation()
+
+
+        # 2a. choose repair operator (roulette)
+        repair_operator_choice = random.choices(list(repair_operators.keys()),
+                                                 weights=list(repair_operators.values()))
+        # 2b. repair
+        if repair_operator_choice == 'most_items_batch_first':
+            # get item count for each of the destroyed batches
+            destroyed_batches_item_count_list = []
+            for batch in destroyed_batches:
+                destroyed_batches_item_count_list.append(self.warehouseInstance.BatchesDF.loc[self.warehouseInstance.BatchesDF['Batch'].astype(str) == str(batch)]['ItemCount'].values[0])
+
+            # sort by item count descending
+            destroyed_batches = [x for _, x in sorted(zip(destroyed_batches_item_count_list, destroyed_batches))]
+            destroyed_batches.reverse()
+
+            # reassign batches to cobots, starting with the batch with the most items and the cobot with the least batches
+            for i in destroyed_batches:
+                print(i)
+                # find index of cobot with less items and assign the batch
+                cobot_assign = s_prime.index(min(s_prime, key=len))
+                s_prime[cobot_assign].append(i)
+
+        elif repair_operator_choice == 'fewest_items_batch_first':
+            # get item count for each of the destroyed batches
+            destroyed_batches_item_count_list = []
+            for batch in destroyed_batches:
+                destroyed_batches_item_count_list.append(self.warehouseInstance.BatchesDF.loc[
+                                                             self.warehouseInstance.BatchesDF['Batch'].astype(
+                                                                 str) == str(batch)]['ItemCount'].values[0])
+
+            # sort by item count ascending
+            destroyed_batches = [x for _, x in sorted(zip(destroyed_batches_item_count_list, destroyed_batches))]
+
+            # reassign batches to cobots, starting with the batch with the most items and the cobot with the least batches
+            for i in destroyed_batches:
+                print(i)
+                # find index of cobot with less items and assign the batch
+                cobot_assign = s_prime.index(min(s_prime, key=len))
+                s_prime[cobot_assign].append(i)
+
+
+        elif repair_operator_choice == 'random_fill':
+            #randomly shuffle elements of destroyed batches
+            random.shuffle(destroyed_batches)
+            # assign the batches to the cobots.
+            for i in destroyed_batches:
+                print(i)
+                # find index of cobot with less items and assign the batch
+                cobot_assign = s_prime.index(min(s_prime, key=len))
+                s_prime[cobot_assign].append(i)
+
+
+        # 3. compare solutions and adapt operator weights
+        omega = [5, 1.5, 0.8, 0.5]
+        lmbda = 0.8
+        makespan_s_prime = self.calculateMakeSpan(s_prime)
+        if makespan_s_prime < self.calculateMakeSpan(s_star):
+            # update s_star
+            s_star = copy.deepcopy(s_prime)
+            # update weights
+            destroy_operators[destroy_operator_choice[0]] = (lmbda * destroy_operators[destroy_operator_choice[0]]) + (omega[0] * (1 - lmbda))
+            repair_operators[repair_operator_choice[0]] = (lmbda * repair_operators[repair_operator_choice[0]]) + (omega[0] * (1 - lmbda))
+        elif makespan_s_prime < self.calculateMakeSpan(s):
+            # update weights
+            destroy_operators[destroy_operator_choice[0]] = (lmbda * destroy_operators[destroy_operator_choice[0]]) + (omega[1] * (1 - lmbda))
+            repair_operators[repair_operator_choice[0]] = (lmbda * repair_operators[repair_operator_choice[0]]) + (omega[1] * (1 - lmbda))
+        elif makespan_s_prime < self.calculateMakeSpan(s_star)*2: # we accept s_prime only when its at max double the time of s_star, but its not a better solution
+            # update weights
+            destroy_operators[destroy_operator_choice[0]] = (lmbda * destroy_operators[destroy_operator_choice[0]]) + (omega[2] * (1 - lmbda))
+            repair_operators[repair_operator_choice[0]] = (lmbda * repair_operators[repair_operator_choice[0]]) + (omega[2] * (1 - lmbda))
+        else: # we dont accept s prime
+            # update weights
+            destroy_operators[destroy_operator_choice[0]] = (lmbda * destroy_operators[destroy_operator_choice[0]]) + (omega[4] * (1 - lmbda))
+            repair_operators[repair_operator_choice[0]] = (lmbda * repair_operators[repair_operator_choice[0]]) + (omega[4] * (1 - lmbda))
+
+        filename = 'Solutions/Task_3/ALNS/' + warehouse + '_' + str(round(makespan_s_prime)) + '_solution_taks3.2_greedy_heuristic_mixed_policy_adaptive_large_neighborhood.xml'
+        self.writeToXML(filename, s_prime)
+
+        # 5. iterate again with s_prime
+
+
+
 
     ######################### start functions #########################
 	# warehouse instance
@@ -723,7 +864,7 @@ class Demo():
         d_ij = warehouse_data_processing.CalculateDistance()
         return d_ij
 
-######################### start functions #########################
+    ######################### start functions #########################
 
     # initlaize solution xml struncture as class object.
     def initSolution(self):
@@ -749,9 +890,9 @@ class Demo():
                         item_id_pod_id_dict[itemPodID].append(j)
 
 
-        return item_id_pod_id_dict  # a dictionary with item IDs as keys and a list of pod locations as value.      # TODO:
+        return item_id_pod_id_dict  # a dictionary with item IDs as keys and a list of pod locations as value.
 
-    # generated a Graph as an attribute of the warehouseInstance.
+    # generated a Graph as an attribute of the warehouseInstance. Used to determine distances and trveling salesman problem
     def generateGraph(self):
         print("[6] Generating Network Graph for Warehouse Instance")
 
@@ -774,7 +915,7 @@ class Demo():
         print(f"[6_b] Network has {G.number_of_nodes()} nodes")
         print(f"[6_c] Network has {G.number_of_edges()} edges")
 
-    # writes the solution to xml file in the desired structure
+    # writes the solution to a xml file in the desired structure
     def writeToXML(self, filename, BatchAssignCobot_List):
         # base element
         root = ET.Element("root")
@@ -1000,42 +1141,49 @@ class Demo():
 
 if __name__ == "__main__":
 
-    _demo = Demo()
-
-
     # preparing warehouse attributes like network graph, batching, orders dataframes etc.
+    _demo = Demo()
     _demo.prepareWarehouseInformation()
     _demo.calculateMakeSpan([[[1],[4]], [[2,3,7],[9]]])
-"""
-    # run task 1 and 2 only for dedicated storage policy
-    if storagePolicies.get('dedicated'):
-        # Task 1.1 Greedy Heuristic
-        _demo.greedyHeuristic_T1()
-        makespan = _demo.calculateMakeSpan(_demo.BatchAssignCobot_List)
-        filename = 'Solutions/Task_1/' + warehouse +'_' + str(makespan) + '_solution_taks1_greedy_heuristic.xml'
-        _demo.writeToXML(filename, _demo.BatchAssignCobot_List)
 
-        # Task 2.1 Simmunaletd Annealing
-        _demo.saNeighborhood_T2(_demo.BatchAssignCobot_List, T=100, alpha=0.8)
-        _demo.perturbSA(3)
+    # Task 1.1 Greedy Heuristic
+    _demo.greedyHeuristic_T1()
+    makespan = _demo.calculateMakeSpan(_demo.BatchAssignCobot_List)
+    filename = 'Solutions/Task_1/' + warehouse +'_' + str(round(makespan)) + '_solution_taks1_greedy_heuristic.xml'
+    _demo.writeToXML(filename, _demo.BatchAssignCobot_List)
+
+    # Task 2.1 Simmunaletd Annealing
+    _demo.saNeighborhood_T2(_demo.BatchAssignCobot_List, T=100, alpha=0.8)
+    _demo.perturbSA(3)
 
 
 
-    elif storagePolicies.get('mixed'):
-        # Task 3.1 Greedy Heuristic for Mixed Policy
-        _demo.greedyHeuristic_T1()
-        makespan = _demo.calculateMakeSpan(_demo.BatchAssignCobot_List)
-        filename = 'Solutions/Task_3/' + warehouse + '_' + str(makespan) + '_solution_taks3_greedy_heuristic_mixed_policy.xml'
-        _demo.writeToXML(filename, _demo.BatchAssignCobot_List)
+    # Task 3.1
+    #################### MIXED ###################
+    ## develop eveything for a mixed storage policy
+    storagePolicies = {}
+    storagePolicies['mixed'] = 'data/sku24/pods_items_mixed_shevels_1-5.txt'
+    # storagePolicies['mixed'] = 'data/sku360/pods_items_mixed_shevels_1-5.txt'
+
+    _demo_mixed = Demo()
+    _demo_mixed.prepareWarehouseInformation('mixed')
+
+    # Task 3.1 Greedy Heuristic for Mixed Policy
+    _demo_mixed.greedyHeuristic_T1()            # the same method is called here, the mixed storage policy is simply implemented in the choosePodLocation() method of the warehouse class that gets called automatically when we use mixed storage policy.
+    makespan_mixed = _demo_mixed.calculateMakeSpan(_demo.BatchAssignCobot_List)
+    filename = 'Solutions/Task_3/' + warehouse + '_' + str(round(makespan_mixed)) + '_solution_taks3_greedy_heuristic_mixed_policy.xml'
+    _demo_mixed.writeToXML(filename, _demo_mixed.BatchAssignCobot_List)
+
+    _demo_mixed.alNeighborhood()
 
     print(1)
-[[1],[4,9],[0,6]], [[2,3,7],[8],[5]]
-
-"""
+    [[1],[4,9],[0,6]], [[2,3,7],[8],[5]]
 
 
-#[20,50,70,100],[250,270],[300,340]
-#[30,60,80,120],[180,200],[230,260,330]
 
-#[20,50]
-#[30,60]
+
+    #[20,50,70,100],[250,270],[300,340]
+    #[30,60,80,120],[180,200],[230,260,330]
+
+    #[20,50]
+    #[30,60]

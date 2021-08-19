@@ -714,14 +714,12 @@ class Warehouse:
         return item_id_pod_id_dict  # a dictionary with item IDs as keys and a list of pod locations as value.
 
     # adds fields to BatchesDF (Items, Pods, etc.)
-    def getItemPodsBatchDF(self):
+    def getItemPodsBatchDF(self, storagePolicy):
         '''
         calculates the route and travel time of each batch, based on the batch and the output station
         :return: travel time and route
         '''
         print("[3] Calculating Item List and Pod Locations for Batches")
-
-        storagePolicy = 'mixed'
 
         AllBatchesItems = []
         AllBatchesItemsDict = []
