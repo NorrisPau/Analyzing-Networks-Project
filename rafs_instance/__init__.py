@@ -309,6 +309,15 @@ class OrderItemPosition:
 
 #recursively call all possible combinations of orders to batches without permutations
 def getFeasibleOrderCombinations(feasibleBatchesList, target, data, weight_table, cobotCapacity):
+    '''
+    Recursive function to produce all ossible combinations of orders (batcges)
+    :param feasibleBatchesList: list of feasible batches getting passed through each recursive iteration
+    :param target: orders so far assigned
+    :param data: order data
+    :param weight_table: weights of each order
+    :param cobotCapacity: 18
+    :return:
+    '''
     for i in range(len(data)):
         new_target = copy.copy(target)
         new_target.append(data[i])
@@ -324,6 +333,8 @@ def getFeasibleOrderCombinations(feasibleBatchesList, target, data, weight_table
 
 # recursively indent xml tree
 def indentXMLTree(e, level=0):
+    '''recursively indents xml element tree for better readability
+    '''
     i = "\n" + level*"  "
     if len(e):
         if not e.text or not e.text.strip():
@@ -726,7 +737,6 @@ class Warehouse:
         for k in self.feasibleBatches:
             Batch = k
             # get list of order of items in batch
-            # TODO: hier müssen wir die orders vom batch finden und die items in eine liste schreiben)
             # get orderpositions from orderQueue inside of OutputStation
             itemsInBatch = []
             itemsInBatchList = []
@@ -744,6 +754,7 @@ class Warehouse:
             for k in itemsInBatch:
                 ItemsDict[k.ItemDescID] = int(ItemsDict[k.ItemDescID]) + int(k.Count)
 
+            # append to overarching list
             AllBatchesItems.append(itemsInBatchList)
             AllItemCounts.append(len(itemsInBatchList))
             AllBatchesItemsDict.append(ItemsDict)
@@ -756,13 +767,12 @@ class Warehouse:
             PodID = {}
             if storagePolicy == 'dedicated':
                 for i in ItemsDict:
-                    PodID[i] = self.ItemPodLocations[ItemPodID[i]]  # TODO: implement heuristic to choose suitable pod in mixed policy case
+                    PodID[i] = self.ItemPodLocations[ItemPodID[i]]
                 stationsToVisit = [item for elem in list(PodID.values()) for item in elem]
             elif storagePolicy == 'mixed':
                 stationsToVisit = self.choosePodLocation(ItemPodID)
 
-
-
+            # append to overarching list
             AllOrderCounts.append(len(Batch))
             AllBatchesItemPodID.append(ItemPodID)
             AllBatchesPodID.append(PodID)
@@ -777,9 +787,6 @@ class Warehouse:
         self.BatchesDF['ItemPodID'] = AllBatchesItemPodID
         self.BatchesDF['PodIDs'] = AllBatchesPodID
         self.BatchesDF['StationsToVisit'] = AllStations
-
-        # collecting all information in dataframe
-        #batchItemsDF = pd.DataFrame({'items':ItemsDict.keys(), 'quantity':ItemsDict.values(), 'ItemPodID':ItemPodID.values(), 'PodID': PodID.values()})
 
     # chooses pod location in a mixed shelves storage policy based on a greedy heuristic
     def choosePodLocation(self, ItemPodID):

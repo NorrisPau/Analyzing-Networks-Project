@@ -16,7 +16,6 @@ import random
 
 # setting the warehouse (small:24, large:360)
 warehouse = '360'
-
 if warehouse == '360':
     layoutFile = r'data/layout/1-1-1-2-1.xlayo'
     podInfoFile = 'data/sku360/pods_infos.txt'
@@ -27,7 +26,7 @@ if warehouse == '360':
 
     storagePolicies = {}
     storagePolicies['dedicated'] = 'data/sku360/pods_items_dedicated_1.txt'
-    #storagePolicies['mixed'] = 'data/sku360/pods_items_mixed_shevels_1-5.txt' # TODO: make it possible to change sotorage policy by way of passing an argument, not commenting this line.
+    #storagePolicies['mixed'] = 'data/sku360/pods_items_mixed_shevels_1-5.txt'
 
     orders = {}
     orders['10_5'] = r'data/sku360/orders_10_mean_5_sku_360.xml'
@@ -175,8 +174,12 @@ class Demo():
         d_ij = warehouse_data_processing.CalculateDistance()
         return d_ij
 
+
     # preparing the warehouse information
     def prepareWarehouseInformation(self, storagePolicy='dedicated'):
+        '''
+        preprares information in thre warehouse class that will be used by other methods to determine the solutions
+        '''
         timer_start = time.time()
 
         # calculates all feasible batches of the given orders
@@ -198,26 +201,32 @@ class Demo():
         print(f"[TIME] Calculated {len(self.warehouseInstance.BatchesDF)} Batches x {len(self.warehouseInstance.OutputStations)} in {time_tsp} seconds")
         print(f"[TIME] That is {len(self.warehouseInstance.BatchesDF)*len(self.warehouseInstance.OutputStations)} TSPs with {len(self.warehouseInstance.BatchesDF)*len(self.warehouseInstance.OutputStations)/time_tsp} TSPs per second")
 
-
     # calcukating shortest paths for batches with TSP
     def shortestPathTSP(self, OutputStation):
-        # input: packing station
-               # stationstovisit
+        '''
+        uses the method traveling salesman problem from networkx to determine shortest path.
+        this could be replaced with a simpler heuristic that is less computationally expensive,
+         but due to time constraints we are not able to do so anymore.
+        :param OutputStation: the output station that this was assigned to.
+        :return: shortest path
+        '''
         print("[7] Starting Calculation of shortest Routes with TSP")
 
-        BotVelocity = 2  # dynamically draw this value from BotClass
+        BotVelocity = 2
 
         AllChosenRoutes = []
         AllTravelTimes = []
         AllTravelDistances = []
         AllBatchesStations = list(self.warehouseInstance.BatchesDF['StationsToVisit'])
 
+        # traveling salesman algorithm
         tsp = approximation.traveling_salesman.traveling_salesman_problem
 
-        SA_tsp = approximation.traveling_salesman.simulated_annealing_tsp
+        # there are several tsp methods available, we choose the greedy version, due to faster runtime.
+        #SA_tsp = approximation.traveling_salesman.simulated_annealing_tsp
         GR_tsp = approximation.traveling_salesman.greedy_tsp
-        CF_tsp = approximation.traveling_salesman.christofides
-        TA_tsp = approximation.traveling_salesman.threshold_accepting_tsp
+        #CF_tsp = approximation.traveling_salesman.christofides
+        #TA_tsp = approximation.traveling_salesman.threshold_accepting_tsp
 
         #tsp_method = lambda G, wt: SA_tsp(G, "greedy", weight='weight', temp=500)       # simmulated annealing TSP
         tsp_method = lambda G, wt: GR_tsp(G, weight='weight' )                          # Greedy TSP
@@ -225,6 +234,7 @@ class Demo():
         #tsp_method = lambda G, wt: TA_tsp(G, "greedy", weight='weight' )                # Treshold Accepting TSP
 
 
+        # this loop iterates over feasible batches and calculates shortest paths for each of them.
         i = 0
         for j in AllBatchesStations:
             print(f"[7_{i}] TSP instance {i} of {len(AllBatchesStations)}")
@@ -233,17 +243,16 @@ class Demo():
 
             ######################################################################
             chosenTravelRoute = tsp(self.warehouseInstance.WarehouseGraph, nodes=stationsToVisit, method=tsp_method)
-
             TravelDistance = nx.classes.function.path_weight(self.warehouseInstance.WarehouseGraph, chosenTravelRoute, 'weight')
             TotalRouteTime =  TravelDistance / BotVelocity
-
             ######################################################################
+
             AllChosenRoutes.append(chosenTravelRoute)
             AllTravelTimes.append(TotalRouteTime)
             AllTravelDistances.append(TravelDistance)
             i += 1
 
-        # output: shortest path TSP
+        # output: shortest path TSP. information from this methods gets collected in batchesDF
         col_name_route = 'shortestRoute_' + OutputStation
         col_name_time = 'travelTime_' + OutputStation
         col_name_dist = 'travelDist_' + OutputStation
@@ -252,7 +261,6 @@ class Demo():
         self.warehouseInstance.BatchesDF[col_name_time] = AllTravelTimes
         self.warehouseInstance.BatchesDF[col_name_dist] = AllTravelDistances
         self.warehouseInstance.BatchesDF[col_name_time_per_order] = self.warehouseInstance.BatchesDF[col_name_time] / self.warehouseInstance.BatchesDF['OrderCount']
-
 
     # using a greedy heuristic to find a solution to task 1
     def greedyHeuristic_T1(self):
@@ -355,7 +363,9 @@ class Demo():
 
     # method to calculate the makespan of a proposed solution
     def calculateMakeSpan(self, batch_assignments):
-
+        '''
+        calculates the makespan of a given solution.
+        '''
         OrdersTable = self.warehouseInstance.BatchesDF[
             ['Batch', 'shortestRoute_OutD0', 'shortestRoute_OutD1']]
         TimePackers = [30, 30]
@@ -474,6 +484,9 @@ class Demo():
 
     # simulated annealing algorithm for dedicated storeage policy
     def saNeighborhood_T2(self, initialSolution, T = 100, T_end = 10, alpha = 0.8):
+        '''
+        uses simmulated annealing technique to improve the first solution given in task 1
+        '''
         print("[SA] Start SA")
         s = initialSolution
         s_optimal = copy.deepcopy(s)
@@ -536,6 +549,9 @@ class Demo():
 
     # method that contains a pertubation strategy for task 2.3
     def perturbSA(self, iterations):
+        '''
+        uses a perturbation strategy to improve the solution even further
+        '''
         overall_optimal = 10000000
         while iterations > 0:
             # Create initial solution
@@ -564,7 +580,11 @@ class Demo():
             iterations -= 1
 
     # Adaptive Large Neighborhood Search in Mixed Storage Policy Warehouse
-    def alNeighborhood(self, iterations = 100):
+    def alNeighborhood(self, iterations = 50):
+        '''
+        adaptive large neighborhood search for mixed storage policy warehouse
+        :param iterations: iterations of the alns
+        '''
         # different solutions given in the FullBatchAssignment format, so that we can calculate the makespan on them)
         # s         initial solution (from task 3.1)
         # s_prime   candiate solution (after destroy and repair)
@@ -687,7 +707,7 @@ class Demo():
             # 5. iterate again with s_prime
 
     # generate ItemID - PodLocation dictionary.
-    def getPodforItems(self):   # TODO: dstinguish mixed and dedicated storage policy)1
+    def getPodforItems(self):
         ''':key
         method to collect the pod in which each item is located. can be adapoted for a mixed storage policy where items can be contained in multiple pods.
         '''
@@ -708,6 +728,9 @@ class Demo():
 
     # generated a Graph as an attribute of the warehouseInstance. Used to determine distances and trveling salesman problem
     def generateGraph(self):
+        '''
+        generating graph for networkx package
+        '''
         print("[6] Generating Network Graph for Warehouse Instance")
 
         G = nx.Graph()
@@ -731,6 +754,9 @@ class Demo():
 
     # writes the solution to a xml file in the desired structure
     def writeToXML(self, filename, BatchAssignCobot_List):
+        '''
+        writing a given solution to xml file in the required structure
+        '''
         print("[XX] Exporting Solution to XML file")
         # base element
         root = ET.Element("root")
@@ -782,8 +808,8 @@ class Demo():
                         for item in self.warehouseInstance.Orders[order.OrderID].Positions:
                             for position in range(len(self.warehouseInstance.Orders[order.OrderID].Positions[item].Count)):
                                 item_elem = ET.SubElement(order_elem, "Item")  # adding orders to the batches
-                                item_elem.set("ID", 'C' + str(item) + '_' + str(position)) ## TODO: wont work for mixed storage policy
-                                item_elem.set("Pod", self.warehouseInstance.ItemPodLocations[self.warehouseInstance.ItemDescriptions[item].ItemPodID][0]) ## TODO: for mixed storage policy, this has to be adapted
+                                item_elem.set("ID", 'C' + str(item) + '_' + str(position))
+                                item_elem.set("Pod", self.warehouseInstance.ItemPodLocations[self.warehouseInstance.ItemDescriptions[item].ItemPodID][0])
                                 item_elem.set("Type", self.warehouseInstance.ItemDescriptions[item].ItemPodID) ##
 
 
@@ -807,7 +833,6 @@ class Demo():
         tree.write(filename, encoding="utf-8", xml_declaration=True)
 
 
-
 if __name__ == "__main__":
 
     # preparing warehouse attributes like network graph, batching, orders dataframes etc.
@@ -828,7 +853,6 @@ if __name__ == "__main__":
 
 
     # Task 3.1
-    #################### MIXED ###################
     ## develop eveything for a mixed storage policy
     storagePolicies = {}
     if warehouse == '360':
@@ -840,7 +864,7 @@ if __name__ == "__main__":
     _demo_mixed.prepareWarehouseInformation('mixed')
 
     # Task 3.1 Greedy Heuristic for Mixed Policy
-    _demo_mixed.greedyHeuristic_T1()            # the same method is called here, the mixed storage policy is simply implemented in the choosePodLocation() method of the warehouse class that gets called automatically when we use mixed storage policy.
+    _demo_mixed.greedyHeuristic_T1()                # the same method is called here, the mixed storage policy is simply implemented in the choosePodLocation() method of the warehouse class that gets called automatically when we use mixed storage policy.
     makespan_mixed = _demo_mixed.calculateMakeSpan(_demo.BatchAssignCobot_List)
     filename = 'Solutions/Task_3/' + warehouse + '_' + str(round(makespan_mixed)) + '_solution_taks3_greedy_heuristic_mixed_policy.xml'
     _demo_mixed.writeToXML(filename, _demo_mixed.BatchAssignCobot_List)
@@ -851,4 +875,3 @@ if __name__ == "__main__":
     print('[END] Finished Calculating All Tasks')
     # Her optimal solution
     # [[1],[4,9],[0,6]], [[2,3,7],[8],[5]]
-    #
