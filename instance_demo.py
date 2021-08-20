@@ -15,7 +15,7 @@ import copy
 import random
 
 # setting the warehouse (small:24, large:360)
-warehouse = '360'
+warehouse = '24'
 if warehouse == '360':
     layoutFile = r'data/layout/1-1-1-2-1.xlayo'
     podInfoFile = 'data/sku360/pods_infos.txt'
