@@ -4,7 +4,6 @@ import copy
 import pandas as pd
 
 
-
 class PodLayout:
     def __init__(self, tierCount= None, tierHeight= None, humanCount= None, humanRad= None, humanMaxAcc= None, humanMaxDec= None,
                  humanMaxVel= None, humanTurnSpeed= None, boxCap= None, botCount= None, botRad= None, maxAcc= None, maxDec= None,

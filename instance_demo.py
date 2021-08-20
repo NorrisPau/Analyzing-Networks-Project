@@ -1,30 +1,18 @@
-#example to
-import time
-import numpy as np
 import xml.etree.cElementTree as ET
 import networkx as nx
 import networkx.algorithms.approximation as approximation
 import matplotlib.pyplot as plt
-import pandas as pd
-import itertools
-import datetime
-import pickle
-import traceback
 import os
 import os.path
 from os import path
 import math
 import json
 import time
-from operator import itemgetter, attrgetter
-from xml.dom import minidom
 import rafs_instance as instance
-import untangle
 import numpy as np
 import itertools
 import copy
 import random
-import sys
 
 # setting the warehouse (small:24, large:360)
 warehouse = '360'
@@ -486,7 +474,7 @@ class Demo():
 
     # simulated annealing algorithm for dedicated storeage policy
     def saNeighborhood_T2(self, initialSolution, T = 100, T_end = 10, alpha = 0.8):
-        print("Start SA")
+        print("[SA] Start SA")
         s = initialSolution
         s_optimal = copy.deepcopy(s)
         makespan_s = self.calculateMakeSpan(s)

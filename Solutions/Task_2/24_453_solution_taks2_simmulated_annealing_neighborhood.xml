@@ -5,38 +5,42 @@
       <Bot ID="0">
         <Batch ID="1">
           <Orders>
-            <Order>OC1</Order>
-            <Order>OC2</Order>
+            <Order>OC0</Order>
+            <Order>OC4</Order>
+            <Order>OC7</Order>
           </Orders>
         </Batch>
         <Batch ID="2">
           <Orders>
-            <Order>OC8</Order>
+            <Order>OC1</Order>
           </Orders>
         </Batch>
         <Batch ID="3">
           <Orders>
-            <Order>OC7</Order>
-            <Order>OC9</Order>
+            <Order>OC8</Order>
           </Orders>
         </Batch>
       </Bot>
       <Bot ID="1">
         <Batch ID="1">
           <Orders>
-            <Order>OC3</Order>
-            <Order>OC4</Order>
+            <Order>OC2</Order>
+            <Order>OC9</Order>
           </Orders>
         </Batch>
         <Batch ID="2">
           <Orders>
-            <Order>OC5</Order>
+            <Order>OC6</Order>
           </Orders>
         </Batch>
         <Batch ID="3">
           <Orders>
-            <Order>OC0</Order>
-            <Order>OC6</Order>
+            <Order>OC5</Order>
+          </Orders>
+        </Batch>
+        <Batch ID="4">
+          <Orders>
+            <Order>OC3</Order>
           </Orders>
         </Batch>
       </Bot>
@@ -47,6 +51,41 @@
           <Batch BatchNumber="1" Distance="40.9">
             <ItemsData>
               <Orders>
+                <Order ID="OC1" />
+                <Order ID="OC2" />
+                <Order ID="OC3" />
+                <Order ID="OC4">
+                  <Item ID="C3_0" Pod="10" Type="blue/b" />
+                  <Item ID="C5_0" Pod="2" Type="red/b" />
+                  <Item ID="C4_0" Pod="11" Type="green/b" />
+                </Order>
+                <Order ID="OC5" />
+                <Order ID="OC6" />
+                <Order ID="OC7">
+                  <Item ID="C1_0" Pod="15" Type="green/a" />
+                  <Item ID="C8_0" Pod="4" Type="red/c" />
+                  <Item ID="C7_0" Pod="9" Type="green/c" />
+                </Order>
+                <Order ID="OC8" />
+                <Order ID="OC9" />
+                <Order ID="OC10" />
+              </Orders>
+            </ItemsData>
+            <Edges>
+              <Edge StartNode="OutD0" EndNode="2" />
+              <Edge StartNode="2" EndNode="9" />
+              <Edge StartNode="9" EndNode="10" />
+              <Edge StartNode="10" EndNode="4" />
+              <Edge StartNode="4" EndNode="11" />
+              <Edge StartNode="11" EndNode="15" />
+              <Edge StartNode="15" EndNode="14" />
+              <Edge StartNode="14" EndNode="OutD0" />
+            </Edges>
+            <Waypoints />
+          </Batch>
+          <Batch BatchNumber="2" Distance="40.9">
+            <ItemsData>
+              <Orders>
                 <Order ID="OC1">
                   <Item ID="C7_0" Pod="9" Type="green/c" />
                   <Item ID="C6_0" Pod="1" Type="blue/c" />
@@ -54,10 +93,7 @@
                   <Item ID="C0_0" Pod="7" Type="blue/a" />
                   <Item ID="C2_0" Pod="16" Type="red/a" />
                 </Order>
-                <Order ID="OC2">
-                  <Item ID="C7_0" Pod="9" Type="green/c" />
-                  <Item ID="C5_0" Pod="2" Type="red/b" />
-                </Order>
+                <Order ID="OC2" />
                 <Order ID="OC3" />
                 <Order ID="OC4" />
                 <Order ID="OC5" />
@@ -69,10 +105,9 @@
               </Orders>
             </ItemsData>
             <Edges>
-              <Edge StartNode="OutD0" EndNode="1" />
-              <Edge StartNode="1" EndNode="7" />
-              <Edge StartNode="7" EndNode="2" />
-              <Edge StartNode="2" EndNode="9" />
+              <Edge StartNode="OutD0" EndNode="7" />
+              <Edge StartNode="7" EndNode="1" />
+              <Edge StartNode="1" EndNode="9" />
               <Edge StartNode="9" EndNode="4" />
               <Edge StartNode="4" EndNode="17" />
               <Edge StartNode="17" EndNode="16" />
@@ -81,7 +116,7 @@
             </Edges>
             <Waypoints />
           </Batch>
-          <Batch BatchNumber="2" Distance="40.9">
+          <Batch BatchNumber="3" Distance="40.9">
             <ItemsData>
               <Orders>
                 <Order ID="OC1" />
@@ -104,49 +139,10 @@
               </Orders>
             </ItemsData>
             <Edges>
-              <Edge StartNode="OutD0" EndNode="1" />
-              <Edge StartNode="1" EndNode="7" />
-              <Edge StartNode="7" EndNode="2" />
+              <Edge StartNode="OutD0" EndNode="7" />
+              <Edge StartNode="7" EndNode="1" />
+              <Edge StartNode="1" EndNode="2" />
               <Edge StartNode="2" EndNode="11" />
-              <Edge StartNode="11" EndNode="17" />
-              <Edge StartNode="17" EndNode="16" />
-              <Edge StartNode="16" EndNode="15" />
-              <Edge StartNode="15" EndNode="14" />
-              <Edge StartNode="14" EndNode="OutD0" />
-            </Edges>
-            <Waypoints />
-          </Batch>
-          <Batch BatchNumber="3" Distance="40.9">
-            <ItemsData>
-              <Orders>
-                <Order ID="OC1" />
-                <Order ID="OC2" />
-                <Order ID="OC3" />
-                <Order ID="OC4" />
-                <Order ID="OC5" />
-                <Order ID="OC6" />
-                <Order ID="OC7">
-                  <Item ID="C1_0" Pod="15" Type="green/a" />
-                  <Item ID="C8_0" Pod="4" Type="red/c" />
-                  <Item ID="C7_0" Pod="9" Type="green/c" />
-                </Order>
-                <Order ID="OC8" />
-                <Order ID="OC9">
-                  <Item ID="C7_0" Pod="9" Type="green/c" />
-                  <Item ID="C8_0" Pod="4" Type="red/c" />
-                  <Item ID="C6_0" Pod="1" Type="blue/c" />
-                  <Item ID="C4_0" Pod="11" Type="green/b" />
-                  <Item ID="C2_0" Pod="16" Type="red/a" />
-                  <Item ID="C1_0" Pod="15" Type="green/a" />
-                </Order>
-                <Order ID="OC10" />
-              </Orders>
-            </ItemsData>
-            <Edges>
-              <Edge StartNode="OutD0" EndNode="1" />
-              <Edge StartNode="1" EndNode="9" />
-              <Edge StartNode="9" EndNode="4" />
-              <Edge StartNode="4" EndNode="11" />
               <Edge StartNode="11" EndNode="17" />
               <Edge StartNode="17" EndNode="16" />
               <Edge StartNode="16" EndNode="15" />
@@ -163,20 +159,52 @@
             <ItemsData>
               <Orders>
                 <Order ID="OC1" />
-                <Order ID="OC2" />
-                <Order ID="OC3">
+                <Order ID="OC2">
                   <Item ID="C7_0" Pod="9" Type="green/c" />
-                  <Item ID="C1_0" Pod="15" Type="green/a" />
                   <Item ID="C5_0" Pod="2" Type="red/b" />
-                  <Item ID="C6_0" Pod="1" Type="blue/c" />
                 </Order>
-                <Order ID="OC4">
-                  <Item ID="C3_0" Pod="10" Type="blue/b" />
-                  <Item ID="C5_0" Pod="2" Type="red/b" />
-                  <Item ID="C4_0" Pod="11" Type="green/b" />
-                </Order>
+                <Order ID="OC3" />
+                <Order ID="OC4" />
                 <Order ID="OC5" />
                 <Order ID="OC6" />
+                <Order ID="OC7" />
+                <Order ID="OC8" />
+                <Order ID="OC9">
+                  <Item ID="C7_0" Pod="9" Type="green/c" />
+                  <Item ID="C8_0" Pod="4" Type="red/c" />
+                  <Item ID="C6_0" Pod="1" Type="blue/c" />
+                  <Item ID="C4_0" Pod="11" Type="green/b" />
+                  <Item ID="C2_0" Pod="16" Type="red/a" />
+                  <Item ID="C1_0" Pod="15" Type="green/a" />
+                </Order>
+                <Order ID="OC10" />
+              </Orders>
+            </ItemsData>
+            <Edges>
+              <Edge StartNode="OutD1" EndNode="11" />
+              <Edge StartNode="11" EndNode="4" />
+              <Edge StartNode="4" EndNode="9" />
+              <Edge StartNode="9" EndNode="2" />
+              <Edge StartNode="2" EndNode="1" />
+              <Edge StartNode="1" EndNode="15" />
+              <Edge StartNode="15" EndNode="16" />
+              <Edge StartNode="16" EndNode="OutD1" />
+            </Edges>
+            <Waypoints />
+          </Batch>
+          <Batch BatchNumber="2" Distance="40.9">
+            <ItemsData>
+              <Orders>
+                <Order ID="OC1" />
+                <Order ID="OC2" />
+                <Order ID="OC3" />
+                <Order ID="OC4" />
+                <Order ID="OC5" />
+                <Order ID="OC6">
+                  <Item ID="C0_0" Pod="7" Type="blue/a" />
+                  <Item ID="C3_0" Pod="10" Type="blue/b" />
+                  <Item ID="C1_0" Pod="15" Type="green/a" />
+                </Order>
                 <Order ID="OC7" />
                 <Order ID="OC8" />
                 <Order ID="OC9" />
@@ -184,17 +212,14 @@
               </Orders>
             </ItemsData>
             <Edges>
-              <Edge StartNode="OutD1" EndNode="11" />
-              <Edge StartNode="11" EndNode="10" />
-              <Edge StartNode="10" EndNode="9" />
-              <Edge StartNode="9" EndNode="2" />
-              <Edge StartNode="2" EndNode="1" />
-              <Edge StartNode="1" EndNode="15" />
+              <Edge StartNode="OutD1" EndNode="10" />
+              <Edge StartNode="10" EndNode="7" />
+              <Edge StartNode="7" EndNode="15" />
               <Edge StartNode="15" EndNode="OutD1" />
             </Edges>
             <Waypoints />
           </Batch>
-          <Batch BatchNumber="2" Distance="39.1">
+          <Batch BatchNumber="3" Distance="39.1">
             <ItemsData>
               <Orders>
                 <Order ID="OC1" />
@@ -225,19 +250,20 @@
             </Edges>
             <Waypoints />
           </Batch>
-          <Batch BatchNumber="3" Distance="40.9">
+          <Batch BatchNumber="4" Distance="40.9">
             <ItemsData>
               <Orders>
                 <Order ID="OC1" />
                 <Order ID="OC2" />
-                <Order ID="OC3" />
+                <Order ID="OC3">
+                  <Item ID="C7_0" Pod="9" Type="green/c" />
+                  <Item ID="C1_0" Pod="15" Type="green/a" />
+                  <Item ID="C5_0" Pod="2" Type="red/b" />
+                  <Item ID="C6_0" Pod="1" Type="blue/c" />
+                </Order>
                 <Order ID="OC4" />
                 <Order ID="OC5" />
-                <Order ID="OC6">
-                  <Item ID="C0_0" Pod="7" Type="blue/a" />
-                  <Item ID="C3_0" Pod="10" Type="blue/b" />
-                  <Item ID="C1_0" Pod="15" Type="green/a" />
-                </Order>
+                <Order ID="OC6" />
                 <Order ID="OC7" />
                 <Order ID="OC8" />
                 <Order ID="OC9" />
@@ -245,10 +271,10 @@
               </Orders>
             </ItemsData>
             <Edges>
-              <Edge StartNode="OutD1" EndNode="10" />
-              <Edge StartNode="10" EndNode="9" />
-              <Edge StartNode="9" EndNode="7" />
-              <Edge StartNode="7" EndNode="15" />
+              <Edge StartNode="OutD1" EndNode="9" />
+              <Edge StartNode="9" EndNode="2" />
+              <Edge StartNode="2" EndNode="1" />
+              <Edge StartNode="1" EndNode="15" />
               <Edge StartNode="15" EndNode="OutD1" />
             </Edges>
             <Waypoints />
